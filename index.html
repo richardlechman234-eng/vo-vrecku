@@ -7,6 +7,11 @@
 <meta name="description" content="Jednoduchý osobný rozpočet: príjem, fixné výdavky, nákupy a koľko môžeš minúť denne.">
 <meta name="theme-color" content="#3b5bdb">
 <!-- Ikonka v karte prehliadača (vložená priamo, netreba ďalší súbor) -->
+<!-- Inštalácia na plochu mobilu / počítača (funguje na webovej adrese, nie pri otvorení dvojklikom) -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Vo vrecku">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233b5bdb'/%3E%3Ctext x='16' y='23' font-size='20' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3E€%3C/text%3E%3C/svg%3E">
 
 <style>
@@ -210,6 +215,10 @@
   .chart-box.is-empty canvas { visibility: hidden; }
 
   .backup-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .storage-info { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--bg); font-size: .9rem; }
+  .storage-info.ok { background: var(--green-bg); color: #1f6f30; font-weight: 600; }
+  #backupInfo.old { color: var(--orange); font-weight: 600; }
+  #installBtn { margin-bottom: 12px; }
   .muted { color: var(--muted); font-size: .88rem; }
 
   /* Krátka správa dole na obrazovke (napr. "Výdavok pridaný" + "Vrátiť späť") */
@@ -388,9 +397,11 @@
 
     <!-- ===== ZÁLOHA DÁT ===== -->
     <section class="card">
-      <h2>Záloha dát</h2>
-      <p class="muted">Dáta sa ukladajú automaticky len v tomto prehliadači. Občas si stiahni zálohu –
-        hodí sa aj na prenos do iného počítača alebo mobilu.</p>
+      <h2>Uloženie a záloha</h2>
+      <p class="storage-info" id="storageInfo">Všetko, čo zapíšeš, sa ukladá automaticky v tomto prehliadači
+        a ostane uložené aj po zatvorení stránky.</p>
+      <button class="btn block" id="installBtn" hidden>📲 Nainštalovať aplikáciu na plochu</button>
+      <p class="muted" id="backupInfo"></p>
       <div class="backup-buttons">
         <button class="btn" id="exportBtn">⬇ Exportovať dáta</button>
         <button class="btn ghost" id="importBtn">⬆ Importovať dáta</button>
@@ -743,6 +754,7 @@ function render() {
   renderFreeMoney(c);
   renderExpenses(expenses);
   renderCharts(c, expenses);
+  renderBackupInfo();
 }
 
 // Súhrn hore: veľké čísla + farebný stav
@@ -1088,6 +1100,8 @@ $('exportBtn').onclick = () => {
   link.download = 'vo-vrecku-zaloha-' + today + '.json';
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  try { localStorage.setItem(BACKUP_KEY, today); } catch (e) { /* nevadí */ }
+  renderBackupInfo();
   toast('Záloha bola stiahnutá.');
 };
 
@@ -1133,10 +1147,85 @@ setInterval(refreshToday, 60 * 1000);
 
 
 /* =========================================================
-   9. ŠTART APLIKÁCIE
+   9. TRVALÉ ULOŽENIE, INŠTALÁCIA A PRIPOMIENKA ZÁLOHY
+   ========================================================= */
+
+// Kedy bola stiahnutá posledná záloha (ukladá sa zvlášť od dát)
+const BACKUP_KEY = 'voVrecku.lastBackup';
+
+// Zobrazí dátum poslednej zálohy; po 30 dňoch pripomenie novú
+function renderBackupInfo() {
+  let last = null;
+  try { last = localStorage.getItem(BACKUP_KEY); } catch (e) { /* nevadí */ }
+  const hasData = Object.keys(data.months).length > 0;
+  const info = $('backupInfo');
+  const daysAgo = last ? Math.round((new Date(today) - new Date(last)) / 86400000) : null;
+  const old = hasData && (daysAgo === null || daysAgo >= 30);
+  info.textContent = (last ? 'Posledná záloha: ' + formatDate(last) + '.' : 'Zálohu si ešte nestiahol.') +
+    (old ? ' Odporúčam stiahnuť si ' + (last ? 'novú' : 'ju') + ' – pre prípad straty mobilu alebo vymazania prehliadača.' : '');
+  info.className = 'muted' + (old ? ' old' : '');
+}
+
+/*
+  Požiada prehliadač o TRVALÉ uloženie dát.
+  Bez neho môže prehliadač dáta zmazať, keď mu dochádza miesto,
+  a Safari na iPhone maže dáta stránok, ktoré 7 dní neotvoríš.
+  Nainštalovaná aplikácia (na ploche) je pred tým chránená.
+*/
+async function requestPersistentStorage() {
+  let persisted = false;
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      persisted = (await navigator.storage.persisted()) || (await navigator.storage.persist());
+    }
+  } catch (e) { /* prehliadač to nepodporuje */ }
+
+  const box = $('storageInfo');
+  const installed = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (persisted || installed) {
+    box.textContent = '✓ Dáta sú uložené natrvalo – ostanú, aj keď stránku dlho neotvoríš.';
+    box.className = 'storage-info ok';
+  } else {
+    box.textContent = 'Všetko sa ukladá automaticky v tomto prehliadači a ostane aj po zatvorení. ' +
+      'Pre najväčšiu istotu si aplikáciu pridaj na plochu (v menu prehliadača „Pridať na plochu“ ' +
+      'alebo „Inštalovať aplikáciu“) – potom ju prehliadač nikdy sám nezmaže.';
+    box.className = 'storage-info';
+  }
+}
+
+// Tlačidlo "Nainštalovať" (Chrome/Edge/Android ho ponúknu, keď to ide)
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  $('installBtn').hidden = false;
+});
+$('installBtn').onclick = async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  await installPrompt.userChoice;
+  installPrompt = null;
+  $('installBtn').hidden = true;
+};
+window.addEventListener('appinstalled', () => {
+  $('installBtn').hidden = true;
+  requestPersistentStorage();
+  toast('Aplikácia je nainštalovaná. Nájdeš ju na ploche.');
+});
+
+// Pomocník v pozadí (sw.js) – inštalácia a fungovanie bez internetu.
+// Funguje len na webovej adrese (https), nie pri otvorení súboru dvojklikom.
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(() => { /* bez neho appka funguje tiež */ });
+}
+
+
+/* =========================================================
+   10. ŠTART APLIKÁCIE
    ========================================================= */
 setDefaultDate();
 render();
+requestPersistentStorage();
 </script>
 
 <!-- Knižnica Chart.js na grafy (z internetu cez CDN).
