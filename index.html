@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vo vrecku – osobný finančný poradca</title>
+
+<!-- Knižnica Chart.js na kreslenie grafov (načíta sa z internetu) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<style>
+  /* =========================================================
+     FARBY A ZÁKLADNÉ NASTAVENIA VZHĽADU
+     Tu môžeš ľahko zmeniť farby celej aplikácie.
+     ========================================================= */
+  :root {
+    --bg: #f3f5fa;          /* pozadie stránky */
+    --card: #ffffff;        /* pozadie kariet */
+    --text: #1d2433;        /* hlavná farba textu */
+    --muted: #6b7488;       /* sivý pomocný text */
+    --line: #e4e8f0;        /* tenké čiary a okraje */
+    --primary: #3b5bdb;     /* hlavná modrá (tlačidlá) */
+    --primary-dark: #2f4ac0;
+    --green: #2f9e44;  --green-bg: #ebfbee;   /* v poriadku */
+    --orange: #e8590c; --orange-bg: #fff4e6;  /* pozor */
+    --red: #e03131;    --red-bg: #fff0f0;     /* mínus */
+    --radius: 16px;
+    --shadow: 0 1px 3px rgba(20, 30, 60, .05), 0 8px 24px rgba(20, 30, 60, .07);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.45;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Obal, ktorý drží obsah v strede a nedovolí mu byť príliš široký */
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+  /* ---------- Horná lišta s názvom a prepínačom mesiacov ---------- */
+  .topbar {
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; padding-top: 12px; padding-bottom: 12px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--primary); color: #fff;
+    display: grid; place-items: center; font-weight: 800; font-size: 1.2rem;
+  }
+  .brand h1 { margin: 0; font-size: 1.2rem; }
+  .brand p { margin: 0; font-size: .8rem; color: var(--muted); }
+
+  .month-nav { display: flex; align-items: center; gap: 6px; }
+  .month-label {
+    min-width: 150px; text-align: center; font-weight: 700; font-size: 1.05rem;
+  }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--card); font-size: 1.15rem; cursor: pointer; color: var(--text);
+  }
+  .icon-btn:hover { background: var(--bg); }
+
+  main.wrap { padding-top: 16px; padding-bottom: 40px; }
+
+  /* ---------- Karty ---------- */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+    min-width: 0;
+  }
+  .card h2 { margin: 0 0 12px; font-size: 1.05rem; }
+  .card h2 .hint { font-weight: 400; color: var(--muted); font-size: .85rem; }
+
+  /* Mriežka kariet: na mobile pod sebou, na notebooku vedľa seba */
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 16px; }
+  @media (min-width: 860px) {
+    .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .span2 { grid-column: 1 / -1; }
+  }
+
+  /* ---------- Súhrnná karta s veľkými číslami ---------- */
+  .stats { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+  @media (min-width: 860px) { .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .stat {
+    background: var(--bg); border-radius: 12px; padding: 12px 14px;
+    display: flex; flex-direction: column; min-width: 0;
+  }
+  .stat .label { font-size: .82rem; color: var(--muted); }
+  .stat .value {
+    font-size: clamp(1.3rem, 5vw, 1.9rem); font-weight: 800;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .stat .sub { font-size: .78rem; color: var(--muted); }
+  .pos { color: var(--green); }
+  .warn-text { color: var(--orange); }
+  .neg { color: var(--red); }
+
+  /* Farebný pás so stavom (zelený / oranžový / červený) */
+  .status {
+    margin-top: 12px; padding: 12px 14px; border-radius: 12px;
+    font-weight: 600; border-left: 5px solid;
+  }
+  .status.ok   { background: var(--green-bg);  color: #1f6f30; border-color: var(--green); }
+  .status.warn { background: var(--orange-bg); color: #a33f06; border-color: var(--orange); }
+  .status.bad  { background: var(--red-bg);    color: #a51d1d; border-color: var(--red); }
+  .status.info { background: #eef2ff;          color: #2d3f9c; border-color: var(--primary); }
+
+  /* ---------- Formuláre ---------- */
+  label { font-size: .82rem; color: var(--muted); display: block; margin-bottom: 4px; }
+  input, select {
+    width: 100%; min-width: 0; font: inherit; font-size: 16px; /* 16px = mobil nebude zväčšovať stránku */
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+    background: #fff; color: var(--text);
+  }
+  input:focus, select:focus { outline: 2px solid #bac8ff; border-color: var(--primary); }
+  input.invalid { border-color: var(--red); background: var(--red-bg); }
+
+  .form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  .form-grid > div { min-width: 0; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .inline-form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .inline-form input[name="name"] { flex: 2 1 150px; width: auto; }
+  .inline-form input[name="amount"] { flex: 1 1 100px; width: auto; }
+
+  .btn {
+    font: inherit; font-weight: 600; border: none; border-radius: 10px;
+    padding: 10px 16px; cursor: pointer; background: var(--primary); color: #fff;
+  }
+  .btn:hover { background: var(--primary-dark); }
+  .btn.ghost { background: var(--bg); color: var(--text); border: 1px solid var(--line); }
+  .btn.ghost:hover { background: #e9edf5; }
+  .btn.small { padding: 6px 10px; font-size: .85rem; }
+  .btn.block { width: 100%; }
+
+  .error { color: var(--red); font-size: .85rem; font-weight: 600; min-height: 1.2em; margin-top: 6px; }
+  .error:empty { min-height: 0; margin: 0; }
+
+  /* ---------- Zoznamy (príjmy, fixné výdavky, nákupy) ---------- */
+  .list { list-style: none; margin: 0; padding: 0; }
+  .list li {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 0; border-bottom: 1px solid var(--line);
+  }
+  .list li:last-child { border-bottom: none; }
+  .list .empty { color: var(--muted); justify-content: center; font-size: .9rem; }
+  .item-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .item-amount { font-weight: 700; white-space: nowrap; }
+  .item-actions { display: flex; gap: 4px; }
+  .mini-btn {
+    border: none; background: transparent; cursor: pointer; border-radius: 8px;
+    padding: 6px 8px; font-size: .85rem; color: var(--muted);
+  }
+  .mini-btn:hover { background: var(--bg); color: var(--text); }
+  .mini-btn.del:hover { background: var(--red-bg); color: var(--red); }
+
+  /* Riadok v režime úpravy */
+  .list li.editing { flex-wrap: wrap; }
+  .list li.editing input { flex: 1 1 120px; width: auto; padding: 8px 10px; }
+  .list li.editing .error { flex-basis: 100%; }
+
+  .total-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-top: 10px; padding-top: 10px; border-top: 2px solid var(--line); font-weight: 700;
+  }
+  .total-row .big { font-size: 1.3rem; }
+
+  /* Nákupy */
+  .exp-main { flex: 1; min-width: 0; }
+  .exp-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .chip {
+    font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: #fff;
+  }
+  .exp-date { font-size: .8rem; color: var(--muted); }
+  .exp-note { font-size: .88rem; color: var(--muted); overflow-wrap: anywhere; }
+
+  /* Výpočet voľných peňazí */
+  .calc-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px dashed var(--line);
+  }
+  .calc-row input { max-width: 140px; text-align: right; }
+  .free-big { font-size: clamp(1.6rem, 6vw, 2.2rem); font-weight: 800; }
+
+  /* ---------- Grafy ---------- */
+  .charts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  @media (min-width: 700px) { .charts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .chart-title { font-weight: 700; margin-bottom: 6px; text-align: center; }
+  .chart-box { position: relative; height: 260px; }
+  .chart-empty {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    text-align: center; color: var(--muted); padding: 20px; background: var(--bg); border-radius: 12px;
+  }
+  .chart-box.is-empty .chart-empty { display: flex; }
+  .chart-box.is-empty canvas { visibility: hidden; }
+
+  .backup-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .muted { color: var(--muted); font-size: .88rem; }
+
+  /* Krátka správa dole na obrazovke (napr. "Uložené") */
+  .toast {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(20px);
+    background: #1d2433; color: #fff; padding: 12px 18px; border-radius: 12px;
+    box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: .25s;
+    max-width: calc(100% - 32px); text-align: center; z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.bad { background: var(--red); }
+
+  /* Na úzkych mobiloch trochu zmenšíme hornú lištu */
+  @media (max-width: 420px) {
+    .month-nav { width: 100%; justify-content: space-between; }
+    .month-label { min-width: 0; flex: 1; }
+    .card { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- =========================================================
+     HORNÁ LIŠTA: názov aplikácie a prepínač mesiacov
+     ========================================================= -->
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <div class="logo">€</div>
+      <div>
+        <h1>Vo vrecku</h1>
+        <p>Osobný finančný poradca</p>
+      </div>
+    </div>
+    <nav class="month-nav" aria-label="Výber mesiaca">
+      <button class="icon-btn" id="prevMonth" aria-label="Predchádzajúci mesiac">←</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button class="icon-btn" id="nextMonth" aria-label="Nasledujúci mesiac">→</button>
+      <button class="btn small ghost" id="todayBtn">Tento mesiac</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ===== SÚHRN: veľké čísla a farebný stav ===== -->
+  <section class="card" aria-label="Súhrn mesiaca">
+    <div class="stats">
+      <div class="stat">
+        <span class="label">Voľné na mesiac</span>
+        <span class="value" id="sumFree"></span>
+      </div>
+      <div class="stat">
+        <span class="label">Už minuté</span>
+        <span class="value" id="sumSpent"></span>
+      </div>
+      <div class="stat">
+        <span class="label">Ešte zostáva</span>
+        <span class="value" id="sumRemaining"></span>
+      </div>
+      <div class="stat">
+        <span class="label">Denne môžeš minúť</span>
+        <span class="value" id="sumDaily"></span>
+        <span class="sub" id="sumDailySub"></span>
+      </div>
+    </div>
+    <div class="status" id="status"></div>
+  </section>
+
+  <div class="grid">
+
+    <!-- ===== 4. NOVÝ VÝDAVOK (nákup) ===== -->
+    <section class="card">
+      <h2>Zapísať výdavok</h2>
+      <form id="expenseForm" novalidate>
+        <div class="form-grid">
+          <div>
+            <label for="expAmount">Suma (€)</label>
+            <input id="expAmount" name="amount" type="text" inputmode="decimal" placeholder="napr. 12,50" autocomplete="off">
+          </div>
+          <div>
+            <label for="expCategory">Kategória</label>
+            <select id="expCategory" name="category"></select>
+          </div>
+          <div>
+            <label for="expDate">Dátum</label>
+            <input id="expDate" name="date" type="date">
+          </div>
+          <div>
+            <label for="expNote">Poznámka</label>
+            <input id="expNote" name="note" type="text" maxlength="100" placeholder="napr. Lidl" autocomplete="off">
+          </div>
+          <div class="full">
+            <button class="btn block" type="submit">+ Pridať výdavok</button>
+            <div class="error" id="expError"></div>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- ===== ZOZNAM VÝDAVKOV ZA MESIAC ===== -->
+    <section class="card">
+      <h2>Výdavky v mesiaci <span class="hint" id="expCount"></span></h2>
+      <ul class="list" id="expenseList"></ul>
+      <div class="total-row"><span>Spolu minuté</span><span id="expTotal"></span></div>
+    </section>
+
+    <!-- ===== 6. GRAFY ===== -->
+    <section class="card span2">
+      <h2>Grafy</h2>
+      <div class="charts">
+        <div>
+          <div class="chart-title">Minuté vs. zostáva</div>
+          <div class="chart-box" id="budgetBox">
+            <canvas id="budgetChart"></canvas>
+            <div class="chart-empty" id="budgetEmpty"></div>
+          </div>
+        </div>
+        <div>
+          <div class="chart-title">Minuté podľa kategórií</div>
+          <div class="chart-box" id="catBox">
+            <canvas id="catChart"></canvas>
+            <div class="chart-empty" id="catEmpty"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 1. PRÍJMY ===== -->
+    <section class="card">
+      <h2>Mesačný príjem <span class="hint">(výplata, brigáda, štipendium…)</span></h2>
+      <ul class="list" id="incomesList"></ul>
+      <form class="inline-form" id="incomesForm" novalidate>
+        <input name="name" type="text" maxlength="60" placeholder="Názov, napr. Výplata" autocomplete="off">
+        <input name="amount" type="text" inputmode="decimal" placeholder="Suma €" autocomplete="off">
+        <button class="btn" type="submit">Pridať</button>
+      </form>
+      <div class="error" id="incomesError"></div>
+      <div class="total-row"><span>Príjem spolu</span><span class="big pos" id="incomesTotal"></span></div>
+    </section>
+
+    <!-- ===== 2. FIXNÉ VÝDAVKY ===== -->
+    <section class="card">
+      <h2>Fixné výdavky <span class="hint">(každý mesiac rovnaké)</span></h2>
+      <ul class="list" id="fixedList"></ul>
+      <form class="inline-form" id="fixedForm" novalidate>
+        <input name="name" type="text" maxlength="60" placeholder="Názov, napr. Nájom" autocomplete="off">
+        <input name="amount" type="text" inputmode="decimal" placeholder="Suma €" autocomplete="off">
+        <button class="btn" type="submit">Pridať</button>
+      </form>
+      <div class="error" id="fixedError"></div>
+      <div class="total-row"><span>Fixné výdavky spolu</span><span class="big" id="fixedTotal"></span></div>
+    </section>
+
+    <!-- ===== 3. VOĽNÉ PENIAZE NA MESIAC ===== -->
+    <section class="card">
+      <h2>Voľné peniaze na mesiac</h2>
+      <div class="calc-row"><span>Príjem</span><strong class="pos" id="calcIncome"></strong></div>
+      <div class="calc-row"><span>− Fixné výdavky</span><strong id="calcFixed"></strong></div>
+      <div class="calc-row">
+        <label for="savingsInput" style="margin:0;font-size:1rem;color:var(--text)">− Chcem ušetriť (€)</label>
+        <input id="savingsInput" type="text" inputmode="decimal" placeholder="0" autocomplete="off">
+      </div>
+      <div class="error" id="savingsError"></div>
+      <div class="total-row">
+        <span>Môžem minúť tento mesiac</span>
+        <span class="free-big" id="calcFree"></span>
+      </div>
+    </section>
+
+    <!-- ===== ZÁLOHA DÁT ===== -->
+    <section class="card">
+      <h2>Záloha dát</h2>
+      <p class="muted">Dáta sa ukladajú automaticky v tomto prehliadači. Pre istotu si občas stiahni zálohu –
+        hodí sa aj na prenos do iného počítača alebo mobilu.</p>
+      <div class="backup-buttons">
+        <button class="btn" id="exportBtn">⬇ Exportovať dáta</button>
+        <button class="btn ghost" id="importBtn">⬆ Importovať dáta</button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+
+/* =========================================================
+   1. NASTAVENIA
+   ========================================================= */
+
+// Pod týmto názvom sa dáta ukladajú v prehliadači (localStorage)
+const STORAGE_KEY = 'voVrecku.data.v1';
+
+// Kategórie bežných výdavkov a ich farby v grafe
+const CATEGORIES = [
+  { name: 'Potraviny',   color: '#2f9e44' },
+  { name: 'Jedlo vonku', color: '#f08c00' },
+  { name: 'Zábava',      color: '#ae3ec9' },
+  { name: 'Oblečenie',   color: '#1c7ed6' },
+  { name: 'Doprava',     color: '#0c8599' },
+  { name: 'Ostatné',     color: '#868e96' }
+];
+
+
+/* =========================================================
+   2. POMOCNÉ FUNKCIE (malé nástroje, ktoré používame všade)
+   ========================================================= */
+
+// Skratka na nájdenie prvku na stránke podľa jeho id
+const $ = (id) => document.getElementById(id);
+
+// Zaokrúhli číslo na centy (2 desatinné miesta)
+const r2 = (n) => Math.round(n * 100) / 100;
+
+// Sčíta sumy v zozname položiek
+const sum = (list) => r2(list.reduce((total, item) => total + item.amount, 0));
+
+// Formát eura po slovensky: "1 234,56 €"
+const euroFormat = new Intl.NumberFormat('sk-SK', { style: 'currency', currency: 'EUR' });
+const money = (n) => euroFormat.format(n);
+
+// Doplní nulu pred jednociferné číslo: 5 -> "05"
+const pad = (n) => String(n).padStart(2, '0');
+
+// Kľúč mesiaca v tvare "2026-11"
+const monthKeyOf = (date) => date.getFullYear() + '-' + pad(date.getMonth() + 1);
+
+// Dnešný dátum v tvare "2026-11-21" (podľa miestneho času)
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+// Vytvorí jedinečné id pre novú položku
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+// Posunie mesiac o +1 alebo -1 (napr. "2026-12" + 1 = "2027-01")
+function shiftMonth(key, delta) {
+  const [y, m] = key.split('-').map(Number);
+  return monthKeyOf(new Date(y, m - 1 + delta, 1));
+}
+
+// Pekný názov mesiaca: "November 2026"
+function monthLabel(key) {
+  const [y, m] = key.split('-').map(Number);
+  const text = new Date(y, m - 1, 1).toLocaleDateString('sk-SK', { month: 'long', year: 'numeric' });
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+// Dátum "2026-11-21" zobrazí ako "21. 11. 2026"
+function formatDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return d + '. ' + m + '. ' + y;
+}
+
+// Správny tvar slova: 1 deň, 2 dni, 5 dní
+const dayWord = (n) => (n === 1 ? 'deň' : (n >= 2 && n <= 4 ? 'dni' : 'dní'));
+
+// Vytvorí HTML prvok (napr. <li>) s triedou a textom
+function el(tag, className, text) {
+  const e = document.createElement(tag);
+  if (className) e.className = className;
+  if (text != null) e.textContent = text;   // textContent = bezpečné vloženie textu
+  return e;
+}
+
+/*
+  Prečíta sumu z textu, ktorý napísal používateľ.
+  - akceptuje čiarku aj bodku (12,50 aj 12.50)
+  - odmietne prázdnu, zápornú alebo nezmyselnú hodnotu
+  Vracia { value: číslo } alebo { error: 'chybová hláška' }.
+  allowZero = true dovolí aj 0 alebo prázdne pole (pre "Chcem ušetriť").
+*/
+function parseAmount(raw, allowZero = false) {
+  const text = String(raw).replace(/[\s €]/g, '');   // odstráni medzery a znak €
+  if (text === '') {
+    return allowZero ? { value: 0 } : { error: 'Zadaj sumu.' };
+  }
+  if (text.startsWith('-')) return { error: 'Suma nemôže byť záporná.' };
+  const normalized = text.replace(',', '.');                // čiarku zmení na bodku
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
+    return { error: 'Zadaj platné číslo, napr. 12,50 alebo 12.50 (najviac 2 desatinné miesta).' };
+  }
+  const value = r2(parseFloat(normalized));
+  if (value === 0 && !allowZero) return { error: 'Suma musí byť väčšia ako 0.' };
+  if (value > 10000000) return { error: 'Táto suma je príliš veľká.' };
+  return { value };
+}
+
+// Číslo zobrazí v políčku na úpravu s čiarkou: 12.5 -> "12,50"
+const toInputText = (n) => n.toFixed(2).replace('.', ',').replace(',00', '');
+
+// Krátka správa dole na obrazovke
+let toastTimer = null;
+function toast(message, type = '') {
+  const t = $('toast');
+  t.textContent = message;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast ' + type; }, 3500);
+}
+
+
+/* =========================================================
+   3. UKLADANIE A NAČÍTANIE DÁT
+
+   Tvar dát:
+   {
+     months: {
+       "2026-11": {
+         incomes:  [ { id, name, amount } ],   // príjmy
+         fixed:    [ { id, name, amount } ],   // fixné výdavky
+         savings:  50,                          // chcem ušetriť
+         expenses: [ { id, amount, category, date, note, created } ]  // nákupy
+       }
+     }
+   }
+   ========================================================= */
+
+// Skontroluje a "vyčistí" dáta (pri načítaní aj pri importe zálohy).
+// Ak dáta nemajú správny tvar, vráti null.
+function cleanData(input) {
+  if (!input || typeof input !== 'object' || !input.months || typeof input.months !== 'object') return null;
+  const okAmount = (a) => typeof a === 'number' && Number.isFinite(a) && a > 0;
+  const cleanItems = (list) => (Array.isArray(list) ? list : [])
+    .filter((x) => x && typeof x.name === 'string' && okAmount(x.amount))
+    .map((x) => ({ id: String(x.id || newId()), name: x.name.slice(0, 60), amount: r2(x.amount) }));
+
+  const out = { months: {} };
+  for (const [key, m] of Object.entries(input.months)) {
+    if (!/^\d{4}-\d{2}$/.test(key) || !m || typeof m !== 'object') continue;
+    out.months[key] = {
+      incomes: cleanItems(m.incomes),
+      fixed: cleanItems(m.fixed),
+      savings: (typeof m.savings === 'number' && m.savings >= 0 && Number.isFinite(m.savings)) ? r2(m.savings) : 0,
+      expenses: (Array.isArray(m.expenses) ? m.expenses : [])
+        .filter((x) => x && okAmount(x.amount) && /^\d{4}-\d{2}-\d{2}$/.test(x.date))
+        .map((x) => ({
+          id: String(x.id || newId()),
+          amount: r2(x.amount),
+          category: CATEGORIES.some((c) => c.name === x.category) ? x.category : 'Ostatné',
+          date: x.date,
+          note: typeof x.note === 'string' ? x.note.slice(0, 100) : '',
+          created: Number(x.created) || 0
+        }))
+    };
+  }
+  return out;
+}
+
+// Načíta dáta z prehliadača (ak ešte nie sú, začne s prázdnymi)
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = cleanData(JSON.parse(raw));
+      if (parsed) return parsed;
+    }
+  } catch (e) { /* poškodené dáta alebo zablokovaný localStorage */ }
+  return { months: {} };
+}
+
+// Uloží dáta do prehliadača
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    toast('Dáta sa nepodarilo uložiť. Prehliadač možno blokuje ukladanie – stiahni si zálohu.', 'bad');
+  }
+}
+
+/*
+  Vráti dáta pre daný mesiac.
+  Ak mesiac ešte neexistuje, PRENESIE príjmy, fixné výdavky a sporenie
+  z najbližšieho skoršieho mesiaca (nákupy sa neprenášajú – nový mesiac začína od nuly).
+  create = true -> mesiac sa aj natrvalo uloží (keď do neho niečo zapisujeme).
+*/
+function getMonth(key, create = false) {
+  if (data.months[key]) return data.months[key];
+  const earlierKey = Object.keys(data.months).filter((k) => k < key).sort().pop();
+  const src = earlierKey ? data.months[earlierKey] : null;
+  const month = {
+    incomes: src ? src.incomes.map((x) => ({ ...x })) : [],
+    fixed: src ? src.fixed.map((x) => ({ ...x })) : [],
+    savings: src ? src.savings : 0,
+    expenses: []
+  };
+  if (create) data.months[key] = month;
+  return month;
+}
+
+
+/* =========================================================
+   4. STAV APLIKÁCIE
+   ========================================================= */
+let data = loadData();                        // všetky dáta
+const currentKey = monthKeyOf(new Date());    // aktuálny mesiac podľa kalendára
+let viewKey = currentKey;                     // mesiac, ktorý práve prezeráme
+let editing = null;                           // ktorá položka sa práve upravuje { list, id }
+
+// Aktuálny mesiac si hneď uložíme (aby sa doň preniesli údaje z minulého mesiaca)
+getMonth(currentKey, true);
+saveData();
+
+
+/* =========================================================
+   5. VÝPOČTY – koľko mám, koľko som minul, koľko môžem minúť
+   ========================================================= */
+function calculate(key) {
+  const m = getMonth(key);
+  const income = sum(m.incomes);
+  const fixed = sum(m.fixed);
+  const savings = m.savings || 0;
+  const free = r2(income - fixed - savings);     // voľné peniaze na mesiac
+  const spent = sum(m.expenses);                 // už minuté
+  const remaining = r2(free - spent);            // ešte zostáva
+
+  const [y, mo] = key.split('-').map(Number);
+  const daysInMonth = new Date(y, mo, 0).getDate();
+
+  let period, daysLeft, expected = null;
+  if (key === currentKey) {
+    period = 'current';
+    const today = new Date().getDate();
+    daysLeft = daysInMonth - today + 1;                    // vrátane dneška
+    expected = r2(Math.max(free, 0) * today / daysInMonth); // koľko by som mal mať minuté do dnes
+  } else if (key < currentKey) {
+    period = 'past';   daysLeft = 0;                       // mesiac už skončil
+  } else {
+    period = 'future'; daysLeft = daysInMonth;             // mesiac ešte nezačal
+  }
+
+  // Koľko môžem minúť denne (ak som v mínuse, tak 0)
+  const daily = daysLeft > 0 ? r2(Math.max(remaining, 0) / daysLeft) : null;
+
+  return { income, fixed, savings, free, spent, remaining, period, daysLeft, expected, daily };
+}
+
+// Rozhodne o farbe a texte stavu (zelená / oranžová / červená)
+function getStatus(c) {
+  if (c.income === 0 && c.fixed === 0 && c.spent === 0) {
+    return { type: 'info', text: 'Začni tým, že dole zadáš svoj mesačný príjem a fixné výdavky.' };
+  }
+  if (c.remaining < 0) {
+    const why = c.free < 0
+      ? 'Fixné výdavky a sporenie sú vyššie ako tvoj príjem.'
+      : 'Minul si viac, než si mal na tento mesiac k dispozícii.';
+    return { type: 'bad', text: '⛔ Si v mínuse o ' + money(-c.remaining) + '. ' + why };
+  }
+  if (c.period === 'current' && c.spent > c.expected + 0.004) {
+    return {
+      type: 'warn',
+      text: '⚠ Pozor, míňaš rýchlejšie, než by si mal. Do dnes by si mal mať minuté najviac ' +
+            money(c.expected) + ', ale minul si ' + money(c.spent) + '.'
+    };
+  }
+  if (c.period === 'past') {
+    return { type: 'ok', text: '✓ Mesiac skončil a ostalo ti ' + money(c.remaining) + '. Výborne!' };
+  }
+  return { type: 'ok', text: '✓ Všetko je v poriadku, si v rámci rozpočtu.' };
+}
+
+
+/* =========================================================
+   6. VYKRESLENIE STRÁNKY
+   Funkcia render() prekreslí všetko podľa aktuálnych dát.
+   Volá sa po každej zmene.
+   ========================================================= */
+function render() {
+  $('monthLabel').textContent = monthLabel(viewKey);
+  $('todayBtn').style.display = viewKey === currentKey ? 'none' : '';  // tlačidlo ukážeme len pri inom mesiaci
+
+  renderSummary();
+  renderItemList('incomes');
+  renderItemList('fixed');
+  renderFreeMoney();
+  renderExpenses();
+  renderCharts();
+}
+
+// Súhrn hore: veľké čísla + farebný stav
+function renderSummary() {
+  const c = calculate(viewKey);
+  $('sumFree').textContent = money(c.free);
+  $('sumFree').className = 'value ' + (c.free < 0 ? 'neg' : '');
+  $('sumSpent').textContent = money(c.spent);
+
+  const status = getStatus(c);
+  const colorClass = { ok: 'pos', warn: 'warn-text', bad: 'neg', info: '' }[status.type];
+  $('sumRemaining').textContent = money(c.remaining);
+  $('sumRemaining').className = 'value ' + colorClass;
+
+  if (c.daily === null) {
+    $('sumDaily').textContent = '—';
+    $('sumDailySub').textContent = 'mesiac už skončil';
+    $('sumDaily').className = 'value';
+  } else {
+    $('sumDaily').textContent = money(c.daily);
+    $('sumDailySub').textContent = c.period === 'current'
+      ? 'ešte ' + c.daysLeft + ' ' + dayWord(c.daysLeft) + ' (aj s dneškom)'
+      : 'na ' + c.daysLeft + ' ' + dayWord(c.daysLeft);
+    $('sumDaily').className = 'value ' + colorClass;
+  }
+
+  $('status').textContent = status.text;
+  $('status').className = 'status ' + status.type;
+}
+
+// Zoznam príjmov alebo fixných výdavkov (s úpravou a mazaním)
+function renderItemList(listName) {
+  const month = getMonth(viewKey);
+  const ul = $(listName + 'List');
+  ul.innerHTML = '';
+
+  if (month[listName].length === 0) {
+    ul.appendChild(el('li', 'empty', listName === 'incomes' ? 'Zatiaľ žiadny príjem.' : 'Zatiaľ žiadne fixné výdavky.'));
+  }
+
+  month[listName].forEach((item) => {
+    const li = el('li');
+
+    if (editing && editing.list === listName && editing.id === item.id) {
+      // --- Režim úpravy: políčka + Uložiť / Zrušiť ---
+      li.classList.add('editing');
+      const nameInput = el('input');  nameInput.value = item.name; nameInput.maxLength = 60;
+      const amountInput = el('input'); amountInput.value = toInputText(item.amount);
+      amountInput.inputMode = 'decimal';
+      const saveBtn = el('button', 'btn small', 'Uložiť');
+      const cancelBtn = el('button', 'btn small ghost', 'Zrušiť');
+      const err = el('div', 'error');
+
+      const doSave = () => {
+        const name = nameInput.value.trim();
+        const parsed = parseAmount(amountInput.value);
+        nameInput.classList.toggle('invalid', !name);
+        amountInput.classList.toggle('invalid', !!parsed.error);
+        if (!name) { err.textContent = 'Zadaj názov.'; return; }
+        if (parsed.error) { err.textContent = parsed.error; return; }
+        const target = getMonth(viewKey, true)[listName].find((x) => x.id === item.id);
+        target.name = name;
+        target.amount = parsed.value;
+        editing = null;
+        saveData();
+        render();
+        toast('Zmena uložená.');
+      };
+      saveBtn.onclick = doSave;
+      cancelBtn.onclick = () => { editing = null; render(); };
+      [nameInput, amountInput].forEach((inp) => inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doSave();
+        if (e.key === 'Escape') { editing = null; render(); }
+      }));
+
+      li.append(nameInput, amountInput, saveBtn, cancelBtn, err);
+      ul.appendChild(li);
+      setTimeout(() => nameInput.focus(), 0);
+    } else {
+      // --- Normálny riadok: názov, suma, tlačidlá ---
+      const actions = el('div', 'item-actions');
+      const editBtn = el('button', 'mini-btn', '✎ Upraviť');
+      const delBtn = el('button', 'mini-btn del', '✕');
+      delBtn.title = 'Zmazať';
+      delBtn.setAttribute('aria-label', 'Zmazať ' + item.name);
+      editBtn.onclick = () => { editing = { list: listName, id: item.id }; render(); };
+      delBtn.onclick = () => {
+        const m = getMonth(viewKey, true);
+        m[listName] = m[listName].filter((x) => x.id !== item.id);
+        saveData();
+        render();
+        toast('Položka „' + item.name + '“ bola zmazaná.');
+      };
+      actions.append(editBtn, delBtn);
+      li.append(el('span', 'item-name', item.name), el('span', 'item-amount', money(item.amount)), actions);
+      ul.appendChild(li);
+    }
+  });
+
+  $(listName + 'Total').textContent = money(sum(month[listName]));
+}
+
+// Karta "Voľné peniaze na mesiac"
+function renderFreeMoney() {
+  const c = calculate(viewKey);
+  $('calcIncome').textContent = money(c.income);
+  $('calcFixed').textContent = '− ' + money(c.fixed);
+  $('calcFree').textContent = money(c.free);
+  $('calcFree').className = 'free-big ' + (c.free < 0 ? 'neg' : 'pos');
+  // Políčko sporenia prepíšeme, len keď doň práve nepíšeš
+  const input = $('savingsInput');
+  if (document.activeElement !== input) {
+    input.value = c.savings ? toInputText(c.savings) : '';
+    input.classList.remove('invalid');
+    $('savingsError').textContent = '';
+  }
+}
+
+// Zoznam nákupov za mesiac (najnovšie hore)
+function renderExpenses() {
+  const month = getMonth(viewKey);
+  const ul = $('expenseList');
+  ul.innerHTML = '';
+
+  // Zoradenie: najnovší dátum hore, pri rovnakom dátume naposledy pridaný hore
+  const sorted = [...month.expenses].sort((a, b) =>
+    b.date.localeCompare(a.date) || b.created - a.created);
+
+  if (sorted.length === 0) {
+    ul.appendChild(el('li', 'empty', 'V tomto mesiaci zatiaľ žiadne výdavky.'));
+  }
+
+  sorted.forEach((exp) => {
+    const li = el('li');
+    const main = el('div', 'exp-main');
+    const top = el('div', 'exp-top');
+    const cat = CATEGORIES.find((c) => c.name === exp.category) || CATEGORIES[5];
+    const chip = el('span', 'chip', exp.category);
+    chip.style.background = cat.color;
+    top.append(chip, el('span', 'exp-date', formatDate(exp.date)));
+    main.appendChild(top);
+    if (exp.note) main.appendChild(el('div', 'exp-note', exp.note));
+
+    const delBtn = el('button', 'mini-btn del', '✕');
+    delBtn.title = 'Zmazať výdavok';
+    delBtn.setAttribute('aria-label', 'Zmazať výdavok ' + money(exp.amount));
+    delBtn.onclick = () => {
+      const m = getMonth(viewKey, true);
+      m.expenses = m.expenses.filter((x) => x.id !== exp.id);
+      saveData();
+      render();
+      toast('Výdavok bol zmazaný.');
+    };
+
+    li.append(main, el('span', 'item-amount', money(exp.amount)), delBtn);
+    ul.appendChild(li);
+  });
+
+  $('expCount').textContent = sorted.length ? '(' + sorted.length + ')' : '';
+  $('expTotal').textContent = money(sum(month.expenses));
+}
+
+
+/* =========================================================
+   7. GRAFY (Chart.js)
+   ========================================================= */
+let budgetChart = null;
+let catChart = null;
+
+// Vytvorí graf, alebo ak už existuje, len mu zmení údaje
+function drawDoughnut(existing, canvasId, labels, values, colors) {
+  if (existing) {
+    existing.data.labels = labels;
+    existing.data.datasets[0].data = values;
+    existing.data.datasets[0].backgroundColor = colors;
+    existing.update();
+    return existing;
+  }
+  return new Chart($(canvasId), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: '#fff', borderWidth: 3 }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14 } },
+        tooltip: { callbacks: { label: (ctx) => ' ' + ctx.label + ': ' + money(ctx.parsed) } }
+      }
+    }
+  });
+}
+
+// Zobrazí alebo skryje text "nie je čo zobraziť" namiesto grafu
+function setEmpty(boxId, emptyId, message) {
+  $(boxId).classList.toggle('is-empty', !!message);
+  $(emptyId).textContent = message || '';
+}
+
+function renderCharts() {
+  // Ak sa Chart.js nenačítal (napr. bez internetu), aplikácia funguje ďalej, len bez grafov
+  if (typeof Chart === 'undefined') {
+    const msg = 'Grafy sa nenačítali – na grafy treba pripojenie na internet.';
+    setEmpty('budgetBox', 'budgetEmpty', msg);
+    setEmpty('catBox', 'catEmpty', msg);
+    return;
+  }
+
+  const c = calculate(viewKey);
+  const month = getMonth(viewKey);
+
+  // --- Graf 1: Minuté vs. Zostáva ---
+  const used = Math.min(c.spent, Math.max(c.free, 0));  // minuté (najviac do výšky voľných peňazí)
+  const left = Math.max(c.remaining, 0);                 // čo ešte zostáva
+  const over = Math.max(-c.remaining, 0);                // o koľko som v mínuse
+  const labels1 = ['Minuté', 'Zostáva'];
+  const values1 = [used, left];
+  const colors1 = ['#3b5bdb', '#40c057'];
+  if (over > 0) { labels1.push('V mínuse'); values1.push(over); colors1.push('#e03131'); }
+  budgetChart = drawDoughnut(budgetChart, 'budgetChart', labels1, values1, colors1);
+  setEmpty('budgetBox', 'budgetEmpty',
+    (used + left + over) === 0 ? 'Zatiaľ nie je čo zobraziť. Zadaj príjem a výdavky.' : '');
+
+  // --- Graf 2: Minuté podľa kategórií ---
+  const byCategory = CATEGORIES.map((cat) =>
+    sum(month.expenses.filter((e) => e.category === cat.name)));
+  const used2 = CATEGORIES.filter((_, i) => byCategory[i] > 0);
+  catChart = drawDoughnut(catChart, 'catChart',
+    used2.map((x) => x.name),
+    byCategory.filter((v) => v > 0),
+    used2.map((x) => x.color));
+  setEmpty('catBox', 'catEmpty', used2.length === 0 ? 'V tomto mesiaci zatiaľ žiadne výdavky.' : '');
+}
+
+
+/* =========================================================
+   8. OVLÁDANIE – čo sa stane po kliknutí / odoslaní formulára
+   ========================================================= */
+
+// Naplní výber kategórií
+CATEGORIES.forEach((cat) => {
+  const opt = el('option', null, cat.name);
+  opt.value = cat.name;
+  $('expCategory').appendChild(opt);
+});
+
+// Predvolený dátum výdavku: dnes (alebo 1. deň, ak prezeráš iný mesiac)
+function setDefaultDate() {
+  $('expDate').value = viewKey === currentKey ? todayISO() : viewKey + '-01';
+}
+
+// --- Prepínanie mesiacov ---
+function goToMonth(key) {
+  viewKey = key;
+  editing = null;
+  setDefaultDate();
+  render();
+}
+$('prevMonth').onclick = () => goToMonth(shiftMonth(viewKey, -1));
+$('nextMonth').onclick = () => goToMonth(shiftMonth(viewKey, +1));
+$('todayBtn').onclick = () => goToMonth(currentKey);
+
+// --- Pridanie príjmu alebo fixného výdavku (rovnaký formulár pre oba) ---
+function setupItemForm(listName) {
+  const form = $(listName + 'Form');
+  const err = $(listName + 'Error');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();                     // stránka sa nemá znova načítať
+    const nameInput = form.elements.name;
+    const amountInput = form.elements.amount;
+    const name = nameInput.value.trim();
+    const parsed = parseAmount(amountInput.value);
+
+    nameInput.classList.toggle('invalid', !name);
+    amountInput.classList.toggle('invalid', !!parsed.error);
+    if (!name) { err.textContent = 'Zadaj názov (napr. ' + (listName === 'incomes' ? 'Výplata' : 'Nájom') + ').'; nameInput.focus(); return; }
+    if (parsed.error) { err.textContent = parsed.error; amountInput.focus(); return; }
+
+    err.textContent = '';
+    getMonth(viewKey, true)[listName].push({ id: newId(), name, amount: parsed.value });
+    saveData();
+    form.reset();
+    nameInput.focus();
+    render();
+  });
+}
+setupItemForm('incomes');
+setupItemForm('fixed');
+
+// --- Chcem ušetriť ---
+$('savingsInput').addEventListener('change', () => {
+  const input = $('savingsInput');
+  const parsed = parseAmount(input.value, true);
+  input.classList.toggle('invalid', !!parsed.error);
+  $('savingsError').textContent = parsed.error || '';
+  if (parsed.error) return;
+  getMonth(viewKey, true).savings = parsed.value;
+  saveData();
+  input.blur();
+  render();
+});
+$('savingsInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') e.target.dispatchEvent(new Event('change'));
+});
+
+// --- Pridanie bežného výdavku (nákupu) ---
+$('expenseForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const err = $('expError');
+  const amountInput = $('expAmount');
+  const dateInput = $('expDate');
+  const parsed = parseAmount(amountInput.value);
+  const date = dateInput.value;
+
+  amountInput.classList.toggle('invalid', !!parsed.error);
+  dateInput.classList.toggle('invalid', !/^\d{4}-\d{2}-\d{2}$/.test(date));
+  if (parsed.error) { err.textContent = parsed.error; amountInput.focus(); return; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { err.textContent = 'Vyber dátum.'; dateInput.focus(); return; }
+  err.textContent = '';
+
+  // Výdavok uložíme do mesiaca podľa jeho dátumu
+  const targetKey = date.slice(0, 7);
+  getMonth(targetKey, true).expenses.push({
+    id: newId(),
+    amount: parsed.value,
+    category: $('expCategory').value,
+    date,
+    note: $('expNote').value.trim(),
+    created: Date.now()
+  });
+  saveData();
+
+  amountInput.value = '';
+  $('expNote').value = '';
+  amountInput.focus();
+  render();
+  if (targetKey !== viewKey) {
+    toast('Výdavok bol uložený do mesiaca ' + monthLabel(targetKey) + '.');
+  } else {
+    toast('Výdavok ' + money(parsed.value) + ' pridaný.');
+  }
+});
+
+// --- Export: stiahne zálohu ako súbor .json ---
+$('exportBtn').onclick = () => {
+  const backup = { app: 'Vo vrecku', exported: new Date().toISOString(), ...data };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'vo-vrecku-zaloha-' + todayISO() + '.json';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  toast('Záloha bola stiahnutá.');
+};
+
+// --- Import: načíta zálohu zo súboru .json ---
+$('importBtn').onclick = () => $('importFile').click();
+$('importFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';                      // aby šlo ten istý súbor vybrať znova
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let imported = null;
+    try { imported = cleanData(JSON.parse(reader.result)); } catch (err) { imported = null; }
+    if (!imported) {
+      toast('Tento súbor sa nedá načítať. Vyber zálohu z aplikácie Vo vrecku (.json).', 'bad');
+      return;
+    }
+    if (!confirm('Import nahradí všetky súčasné dáta údajmi zo zálohy. Pokračovať?')) return;
+    data = imported;
+    getMonth(currentKey, true);
+    saveData();
+    goToMonth(currentKey);
+    toast('Dáta zo zálohy boli načítané.');
+  };
+  reader.readAsText(file);
+});
+
+
+/* =========================================================
+   9. ŠTART APLIKÁCIE
+   ========================================================= */
+setDefaultDate();
+render();
+</script>
+</body>
+</html>
