@@ -305,13 +305,32 @@
   .ob-row { display: flex; align-items: center; gap: 12px; margin: 0; font-family: inherit; font-size: 1rem; text-transform: none; letter-spacing: 0; color: var(--text); }
   .ob-row span { flex: 1; }
   .ob-row input { max-width: 150px; text-align: right; }
+  .ob-del { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .04); color: var(--muted); font-size: 1rem; cursor: pointer; }
+  .ob-del:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+
+  /* prechody medzi krokmi */
+  .ob-leave-next { animation: obLeaveNext .17s ease-in forwards; }
+  .ob-leave-back { animation: obLeaveBack .17s ease-in forwards; }
+  .ob-enter-next > * { animation: obEnterNext .42s cubic-bezier(.2, .8, .2, 1) both; }
+  .ob-enter-back > * { animation: obEnterBack .42s cubic-bezier(.2, .8, .2, 1) both; }
+  /* jednotlivé časti kroku prichádzajú krátko po sebe */
+  .ob-enter-next > :nth-child(2), .ob-enter-back > :nth-child(2) { animation-delay: .04s; }
+  .ob-enter-next > :nth-child(3), .ob-enter-back > :nth-child(3) { animation-delay: .08s; }
+  .ob-enter-next > :nth-child(n+4), .ob-enter-back > :nth-child(n+4) { animation-delay: .12s; }
+  @keyframes obLeaveNext { to { opacity: 0; transform: translateX(-36px); filter: blur(6px); } }
+  @keyframes obLeaveBack { to { opacity: 0; transform: translateX(36px); filter: blur(6px); } }
+  @keyframes obEnterNext { from { opacity: 0; transform: translateX(44px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+  @keyframes obEnterBack { from { opacity: 0; transform: translateX(-44px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+  @media (prefers-reduced-motion: reduce) { .ob-body, .ob-body > * { animation: none !important; } }
   .ob-two { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 8px; }
   .ob-summary { border: 1px solid var(--line); background: rgba(255, 255, 255, .035); border-radius: 18px; padding: 6px 16px; margin-bottom: 16px; }
   .ob-sum-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .ob-sum-row:last-child { border-bottom: none; }
   .ob-sum-row strong { font-weight: 800; }
   .ob-sum-row .acc { color: var(--acc2); text-shadow: 0 0 16px rgba(77, 141, 255, .6); font-size: 1.15rem; }
-  .ob-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 24px; position: sticky; bottom: 12px; }
+  .ob-body { padding-bottom: 8px; }
+  /* tlačidlá dole – zatmavené pozadie, aby cez ne nepresvitali možnosti */
+  .ob-nav { display: flex; justify-content: space-between; gap: 10px; margin: 8px -18px -28px; padding: 28px 18px 18px; position: sticky; bottom: 0; background: linear-gradient(rgba(10, 12, 18, 0), var(--bg) 45%); }
   .ob-nav .btn { flex: 1; padding: 15px; }
 
   @media (max-width: 420px) {
@@ -1476,11 +1495,14 @@ function renderOnboarding() {
   if (step === 'fixed') {
     lead('Ktoré výdavky');
     title('platíš každý mesiac?');
-    note('Klikni na tie, ktoré máš, a dopíš sumu.');
+    note('Klikni na tie, ktoré máš, a dopíš sumu. Omyl zrušíš krížikom ✕.');
     const wrap = el('div', 'ob-chips');
+    const removeFixed = (f) => { delete ob.fixed[f]; renderOnboarding(); };
     for (const f of FIXED_PRESETS) {
-      wrap.append(optBtn(f, f in ob.fixed, () => {
-        if (f in ob.fixed) delete ob.fixed[f]; else ob.fixed[f] = '';
+      // vybraný štítok má ✕ – ďalšie kliknutie ho odoberie
+      wrap.append(optBtn(f + (f in ob.fixed ? '  ✕' : ''), f in ob.fixed, () => {
+        if (f in ob.fixed) { removeFixed(f); return; }
+        ob.fixed[f] = '';
         renderOnboarding();
         const inp = document.querySelector('[data-fixed="' + f + '"]'); if (inp) inp.focus();
       }));
@@ -1488,10 +1510,15 @@ function renderOnboarding() {
     body.append(wrap);
     const list = el('div', 'ob-fixed');
     for (const f of Object.keys(ob.fixed)) {
-      const row = el('label', 'ob-row'); row.append(el('span', null, f));
+      const row = el('div', 'ob-row'); row.append(el('span', null, f));
       const inp = el('input'); inp.inputMode = 'decimal'; inp.placeholder = '€'; inp.value = ob.fixed[f]; inp.dataset.fixed = f;
+      inp.setAttribute('aria-label', 'Suma – ' + f);
       inp.oninput = () => { ob.fixed[f] = inp.value; };
-      row.append(inp); list.append(row);
+      // tlačidlo na odstránenie omylom vybraného výdavku
+      const del = el('button', 'ob-del', '✕'); del.type = 'button';
+      del.title = 'Odstrániť'; del.setAttribute('aria-label', 'Odstrániť ' + f);
+      del.onclick = () => removeFixed(f);
+      row.append(inp, del); list.append(row);
     }
     body.append(list);
   }
@@ -1596,18 +1623,41 @@ function finishOnboarding() {
   goToMonth(currentKey);
 }
 
+/*
+  Plynulý prechod medzi krokmi: starý krok odíde do strany,
+  nový priletí z druhej strany (s rozostrením → zaostrením ako vo videu).
+  dir = 1 (Ďalej) alebo -1 (Späť).
+*/
+let obBusy = false;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function goStep(dir) {
+  if (obBusy) return;
+  const target = Math.max(0, Math.min(ob.i + dir, obSteps().length - 1));
+  if (target === ob.i) return;
+  const body = $('obBody');
+  if (reduceMotion) { ob.i = target; renderOnboarding(); $('onboarding').scrollTop = 0; return; }
+  obBusy = true;
+  body.className = 'ob-body ' + (dir > 0 ? 'ob-leave-next' : 'ob-leave-back');
+  setTimeout(() => {
+    ob.i = target;
+    renderOnboarding();
+    $('onboarding').scrollTop = 0;
+    body.className = 'ob-body ' + (dir > 0 ? 'ob-enter-next' : 'ob-enter-back');
+    setTimeout(() => { body.className = 'ob-body'; obBusy = false; }, 420);
+  }, 170);
+}
+
 $('obNext').onclick = () => {
+  if (obBusy) return;
   const steps = obSteps(), step = steps[ob.i];
   ob.error = obValidate(step);
   if (ob.error) { renderOnboarding(); return; }
   if (step === 'summary') { finishOnboarding(); return; }
-  ob.i = Math.min(ob.i + 1, obSteps().length - 1);
-  renderOnboarding();
-  $('onboarding').scrollTop = 0;
+  goStep(1);
 };
 // pri písaní zmizne stará chybová hláška
 $('obBody').addEventListener('input', () => { ob.error = ''; const e = $('obBody').querySelector('.error'); if (e) e.remove(); });
-$('obBack').onclick = () => { ob.error = ''; ob.i = Math.max(0, ob.i - 1); renderOnboarding(); };
+$('obBack').onclick = () => { ob.error = ''; goStep(-1); };
 $('obSkip').onclick = () => {
   // preskočenie si zapamätáme, aby sa sprievodca neotváral stále dookola
   change(() => { data.profile = Object.assign({ goals: [], goal: null }, data.profile, { onboarded: true }); });
