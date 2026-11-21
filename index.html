@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- SÚKROMIE: prehliadač smie načítať len súbory tejto aplikácie a NESMIE nič odosielať na internet
+     (connect-src none = žiadne odosielanie dát, form-action none = žiadne odosielanie formulárov). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; media-src 'none'; worker-src 'self'; manifest-src 'self'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
 <title>Vo vrecku – osobný finančný poradca</title>
 <meta name="description" content="Jednoduchý osobný rozpočet: príjem, fixné výdavky, nákupy a koľko môžeš minúť denne.">
 <meta name="theme-color" content="#3b5bdb">
@@ -400,6 +404,7 @@
       <h2>Uloženie a záloha</h2>
       <p class="storage-info" id="storageInfo">Všetko, čo zapíšeš, sa ukladá automaticky v tomto prehliadači
         a ostane uložené aj po zatvorení stránky.</p>
+      <p class="muted">🔒 Tvoje údaje nikam neodchádzajú – nie sú na žiadnom serveri a nikto iný ich nevidí. Sú len v tomto zariadení a v zálohe, ktorú si sám stiahneš.</p>
       <button class="btn block" id="installBtn" hidden>📲 Nainštalovať aplikáciu na plochu</button>
       <p class="muted" id="backupInfo"></p>
       <div class="backup-buttons">
@@ -1228,13 +1233,10 @@ render();
 requestPersistentStorage();
 </script>
 
-<!-- Knižnica Chart.js na grafy (z internetu cez CDN).
-     "defer" = stránka sa nezdrží čakaním na ňu.
-     "integrity" = prehliadač overí, že súbor nikto nezmenil. -->
+<!-- Knižnica Chart.js 4.4.1 na grafy – je priamo v priečinku vendor/, nič sa nesťahuje z cudzích serverov.
+     "defer" = stránka sa nezdrží čakaním na ňu. -->
 <script defer
-  src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
-  integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4"
-  crossorigin="anonymous"
+  src="vendor/chart.umd.min.js"
   onload="chartLoaded(true)"
   onerror="chartLoaded(false)"></script>
 </body>
