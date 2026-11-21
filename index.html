@@ -264,6 +264,56 @@
   .toast-btn { font: inherit; font-weight: 800; color: var(--acc2); background: transparent; border: none; cursor: pointer; padding: 6px 8px; border-radius: 8px; white-space: nowrap; }
   .toast-btn:hover { background: rgba(255, 255, 255, .08); }
 
+  /* ---------- Karta "Tvoj plán" ---------- */
+  .goal-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .goal-chip { font-size: .85rem; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: rgba(77, 141, 255, .12); border: 1px solid rgba(77, 141, 255, .4); color: var(--acc2); }
+  .goal-eta { font-family: var(--serif); font-style: italic; font-size: 1.2rem; margin: 6px 0 4px; color: #d6dbea; }
+  .tips { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 8px; }
+  .tips li { padding: 10px 12px 10px 36px; border-radius: 12px; background: rgba(255, 255, 255, .035); border: 1px solid var(--line); position: relative; font-size: .93rem; }
+  .tips li::before { content: "→"; position: absolute; left: 13px; top: 9px; color: var(--acc); font-weight: 800; }
+  .tip-note { font-size: .78rem; margin: 0 0 10px; }
+
+  /* ---------- Úvodný sprievodca ---------- */
+  .ob {
+    position: fixed; inset: 0; z-index: 100; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    background: radial-gradient(800px 520px at 50% -10%, rgba(77, 141, 255, .35), transparent 65%), var(--bg);
+  }
+  .ob::before { content: ""; position: fixed; inset: 0; pointer-events: none; background-image: radial-gradient(circle, rgba(255, 255, 255, .09) 1px, transparent 1.5px); background-size: 28px 28px; }
+  .ob-inner { position: relative; max-width: 560px; margin: 0 auto; padding: 20px 18px 28px; min-height: 100%; display: flex; flex-direction: column; }
+  .ob-top { display: flex; justify-content: space-between; align-items: center; }
+  .ob-step { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; color: var(--acc2); font-size: .85rem; }
+  .ob-skip { background: none; border: none; color: var(--muted); font: inherit; font-size: .9rem; cursor: pointer; padding: 8px; }
+  .ob-skip:hover { color: var(--text); }
+  .ob-bar { height: 3px; background: rgba(255, 255, 255, .12); border-radius: 3px; margin: 10px 0 28px; position: relative; }
+  #obBarFill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--acc); box-shadow: 0 0 12px var(--acc); border-radius: 3px; transition: width .35s; }
+  .ob-body { flex: 1; }
+  .ob-lead { font-family: var(--serif); font-style: italic; font-size: clamp(1.8rem, 8vw, 2.4rem); margin: 0; color: #d6dbea; }
+  .ob-title { font-weight: 900; font-stretch: 112%; text-transform: uppercase; letter-spacing: -.01em; line-height: 1.02; font-size: clamp(1.7rem, 8vw, 2.5rem); margin: 4px 0 12px; }
+  .ob-note { color: var(--muted); margin: 0 0 18px; }
+  .ob-sub { font-family: var(--mono); font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--acc2); margin: 18px 0 8px; }
+  .ob-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-bottom: 14px; }
+  .ob-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .ob-opt {
+    display: flex; align-items: center; gap: 12px; text-align: left; font: inherit; font-weight: 600; font-size: 1rem;
+    color: var(--text); background: rgba(255, 255, 255, .04); border: 1.5px solid rgba(255, 255, 255, .14);
+    border-radius: 16px; padding: 14px 16px; cursor: pointer; transition: border-color .15s, box-shadow .15s, background .15s;
+  }
+  .ob-chips .ob-opt { border-radius: 999px; padding: 10px 16px; }
+  .ob-opt.on { border-color: var(--acc); background: rgba(77, 141, 255, .14); box-shadow: 0 0 20px rgba(77, 141, 255, .35); }
+  .ob-ic { font-size: 1.4rem; }
+  .ob-fixed { display: grid; gap: 8px; }
+  .ob-row { display: flex; align-items: center; gap: 12px; margin: 0; font-family: inherit; font-size: 1rem; text-transform: none; letter-spacing: 0; color: var(--text); }
+  .ob-row span { flex: 1; }
+  .ob-row input { max-width: 150px; text-align: right; }
+  .ob-two { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 8px; }
+  .ob-summary { border: 1px solid var(--line); background: rgba(255, 255, 255, .035); border-radius: 18px; padding: 6px 16px; margin-bottom: 16px; }
+  .ob-sum-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .ob-sum-row:last-child { border-bottom: none; }
+  .ob-sum-row strong { font-weight: 800; }
+  .ob-sum-row .acc { color: var(--acc2); text-shadow: 0 0 16px rgba(77, 141, 255, .6); font-size: 1.15rem; }
+  .ob-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 24px; position: sticky; bottom: 12px; }
+  .ob-nav .btn { flex: 1; padding: 15px; }
+
   @media (max-width: 420px) {
     .month-nav { width: 100%; justify-content: space-between; }
     .month-label { min-width: 0; flex: 1; }
@@ -324,6 +374,15 @@
   </section>
 
   <div class="grid">
+
+    <!-- ===== TVOJ PLÁN (ciele a tipy zo sprievodcu) ===== -->
+    <section class="card span2" id="goalCard">
+      <h2>Tvoj plán</h2>
+      <div id="goalBody"></div>
+      <ul class="tips" id="tipList"></ul>
+      <p class="muted tip-note" id="tipNote">Tipy sú všeobecné rady, nie osobné investičné poradenstvo.</p>
+      <button class="btn small ghost" id="openOnboarding" type="button">Upraviť moje ciele</button>
+    </section>
 
     <!-- ===== NOVÝ VÝDAVOK (nákup) ===== -->
     <section class="card">
@@ -441,6 +500,16 @@
 
   </div>
 </main>
+
+<!-- ===== ÚVODNÝ SPRIEVODCA (otázky pri prvom spustení) ===== -->
+<div class="ob" id="onboarding" hidden role="dialog" aria-modal="true" aria-label="Nastavenie appky">
+  <div class="ob-inner">
+    <div class="ob-top"><span class="ob-step" id="obStep">01 / 05</span><button class="ob-skip" id="obSkip" type="button">Preskočiť</button></div>
+    <div class="ob-bar"><div id="obBarFill"></div></div>
+    <div class="ob-body" id="obBody"></div>
+    <div class="ob-nav"><button class="btn ghost" id="obBack" type="button">← Späť</button><button class="btn" id="obNext" type="button">Ďalej →</button></div>
+  </div>
+</div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -632,6 +701,18 @@ function cleanData(input) {
     }
     out.months[key] = month;
   }
+  // Profil zo sprievodcu (ciele) – len známe hodnoty
+  const pr = input.profile;
+  if (pr && typeof pr === 'object') {
+    const ids = ['minus', 'overview', 'save', 'reserve', 'invest', 'wealth'];
+    const g = pr.goal;
+    out.profile = {
+      onboarded: !!pr.onboarded,
+      goals: (Array.isArray(pr.goals) ? pr.goals : []).filter((x) => ids.includes(x)),
+      goal: g && typeof g.name === 'string' && typeof g.target === 'number' && Number.isFinite(g.target) && g.target > 0
+        ? { name: g.name.slice(0, 40), target: r2(g.target) } : null
+    };
+  }
   return out;
 }
 
@@ -785,6 +866,7 @@ function render() {
   renderExpenses(expenses);
   renderCharts(c, expenses);
   renderBackupInfo();
+  renderGoalCard(c);
 }
 
 // Súhrn hore: veľké čísla + farebný stav
@@ -1295,11 +1377,308 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 
 
 /* =========================================================
-   10. ŠTART APLIKÁCIE
+   10. ÚVODNÝ SPRIEVODCA – pár otázok, podľa ktorých sa appka nastaví
+   Odpovede sa ukladajú len do tohto zariadenia (data.profile).
+   ========================================================= */
+const GOALS = [
+  { id: 'minus',    icon: '🧯', label: 'Nebyť na konci mesiaca v mínuse' },
+  { id: 'overview', icon: '🔍', label: 'Mať prehľad, kam idú peniaze' },
+  { id: 'save',     icon: '🎯', label: 'Ušetriť na niečo konkrétne' },
+  { id: 'reserve',  icon: '🛟', label: 'Vytvoriť si finančnú rezervu' },
+  { id: 'invest',   icon: '📈', label: 'Začať investovať' },
+  { id: 'wealth',   icon: '🏠', label: 'Dlhodobo budovať majetok' }
+];
+const INCOME_TYPES = ['Výplata', 'Brigáda', 'Štipendium', 'Podnikanie', 'Vreckové', 'Iné'];
+const FIXED_PRESETS = ['Nájom', 'Internát', 'Energie', 'Telefón', 'Internet', 'Predplatné', 'MHD / doprava', 'Splátka', 'Poistenie'];
+
+let ob = null;   // stav sprievodcu počas vypĺňania
+
+function obSteps() {
+  return ['welcome', 'goals', 'income', 'fixed', 'savings', 'summary'];
+}
+
+function openOnboarding() {
+  const p = data.profile || {}, cur = planFor(currentKey).savings;
+  // ak už sporenie máš nastavené, ponúkne sa tvoja suma (nič sa neprepíše bez tvojho vedomia)
+  ob = { i: 0, goals: [...(p.goals || [])], incomeType: 'Výplata', incomeAmount: '', fixed: {},
+         savingsMode: cur > 0 ? 'custom' : 'p10', savingsCustom: cur > 0 ? toInputText(cur) : '', goalName: p.goal ? p.goal.name : '', goalTarget: p.goal ? toInputText(p.goal.target) : '', error: '' };
+  $('onboarding').hidden = false;
+  document.body.style.overflow = 'hidden';
+  renderOnboarding();
+}
+function closeOnboarding() {
+  $('onboarding').hidden = true;
+  document.body.style.overflow = '';
+  ob = null;
+}
+
+// pomocník: tlačidlo-voľba
+function optBtn(label, on, onClick, icon) {
+  const b = el('button', 'ob-opt' + (on ? ' on' : ''));
+  b.type = 'button';
+  b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  if (icon) b.append(el('span', 'ob-ic', icon));
+  b.append(el('span', null, label));
+  b.onclick = onClick;
+  return b;
+}
+
+function obIncomeTotal() { const p = parseAmount(ob.incomeAmount); return p.error ? 0 : p.value; }
+function obSavingsValue() {
+  const inc = obIncomeTotal() || sum(planFor(currentKey).incomes);
+  if (ob.savingsMode === 'p10') return r2(inc * .1);
+  if (ob.savingsMode === 'p20') return r2(inc * .2);
+  if (ob.savingsMode === 'custom') { const p = parseAmount(ob.savingsCustom, true); return p.error ? 0 : p.value; }
+  return 0;
+}
+
+function renderOnboarding() {
+  const steps = obSteps(), step = steps[ob.i], body = $('obBody');
+  body.replaceChildren();
+  $('obStep').textContent = String(ob.i + 1).padStart(2, '0') + ' / ' + String(steps.length).padStart(2, '0');
+  $('obBarFill').style.width = ((ob.i + 1) / steps.length * 100) + '%';
+  $('obBack').style.visibility = ob.i === 0 ? 'hidden' : 'visible';
+  $('obNext').textContent = step === 'welcome' ? 'Poďme na to →' : step === 'summary' ? 'Začať používať →' : 'Ďalej →';
+  const lead = (t) => body.append(el('p', 'ob-lead', t));
+  const title = (t) => body.append(el('h2', 'ob-title', t));
+  const note = (t) => body.append(el('p', 'ob-note', t));
+
+  if (step === 'welcome') {
+    lead('Ahoj! 👋');
+    title('Nastavme appku na mieru');
+    note('Pár krátkych otázok, do jednej minúty. Odpovede ostanú len v tvojom mobile. Hocičo môžeš neskôr zmeniť.');
+  }
+  if (step === 'goals') {
+    lead('Čo chceš dosiahnuť');
+    title('vo svojom finančnom živote?');
+    note('Vyber jedno alebo viac.');
+    const wrap = el('div', 'ob-grid');
+    for (const g of GOALS) {
+      wrap.append(optBtn(g.label, ob.goals.includes(g.id), () => {
+        ob.goals = ob.goals.includes(g.id) ? ob.goals.filter((x) => x !== g.id) : [...ob.goals, g.id];
+        renderOnboarding();
+      }, g.icon));
+    }
+    body.append(wrap);
+  }
+  if (step === 'income') {
+    lead('Odkiaľ máš');
+    title('hlavný príjem?');
+    const wrap = el('div', 'ob-chips');
+    for (const t of INCOME_TYPES) wrap.append(optBtn(t, ob.incomeType === t, () => { ob.incomeType = t; renderOnboarding(); }));
+    body.append(wrap);
+    const lab = el('label', null, 'Koľko to je mesačne (€)'); lab.htmlFor = 'obIncome';
+    const inp = el('input'); inp.id = 'obIncome'; inp.inputMode = 'decimal'; inp.placeholder = 'napr. 900'; inp.value = ob.incomeAmount;
+    inp.oninput = () => { ob.incomeAmount = inp.value; };
+    body.append(lab, inp);
+    note('Môžeš nechať prázdne a doplniť neskôr. Ďalšie príjmy pridáš v appke.');
+  }
+  if (step === 'fixed') {
+    lead('Ktoré výdavky');
+    title('platíš každý mesiac?');
+    note('Klikni na tie, ktoré máš, a dopíš sumu.');
+    const wrap = el('div', 'ob-chips');
+    for (const f of FIXED_PRESETS) {
+      wrap.append(optBtn(f, f in ob.fixed, () => {
+        if (f in ob.fixed) delete ob.fixed[f]; else ob.fixed[f] = '';
+        renderOnboarding();
+        const inp = document.querySelector('[data-fixed="' + f + '"]'); if (inp) inp.focus();
+      }));
+    }
+    body.append(wrap);
+    const list = el('div', 'ob-fixed');
+    for (const f of Object.keys(ob.fixed)) {
+      const row = el('label', 'ob-row'); row.append(el('span', null, f));
+      const inp = el('input'); inp.inputMode = 'decimal'; inp.placeholder = '€'; inp.value = ob.fixed[f]; inp.dataset.fixed = f;
+      inp.oninput = () => { ob.fixed[f] = inp.value; };
+      row.append(inp); list.append(row);
+    }
+    body.append(list);
+  }
+  if (step === 'savings') {
+    const inc = obIncomeTotal() || sum(planFor(currentKey).incomes);
+    lead('Koľko chceš');
+    title('každý mesiac odložiť?');
+    note('Táto suma sa odpočíta hneď na začiatku mesiaca, aby si ju neminul.');
+    const wrap = el('div', 'ob-grid');
+    const opt = (mode, label) => wrap.append(optBtn(label, ob.savingsMode === mode, () => { ob.savingsMode = mode; renderOnboarding(); }));
+    opt('p10', '10 % príjmu' + (inc ? ' · ' + money(r2(inc * .1)) : ''));
+    opt('p20', '20 % príjmu' + (inc ? ' · ' + money(r2(inc * .2)) : ''));
+    opt('custom', 'Vlastná suma');
+    opt('none', 'Zatiaľ nie');
+    body.append(wrap);
+    if (ob.savingsMode === 'custom') {
+      const inp = el('input'); inp.inputMode = 'decimal'; inp.placeholder = 'Suma € mesačne'; inp.value = ob.savingsCustom; inp.setAttribute('aria-label', 'Vlastná suma na sporenie');
+      inp.oninput = () => { ob.savingsCustom = inp.value; };
+      body.append(inp);
+    }
+    if (ob.goals.includes('save')) {
+      body.append(el('p', 'ob-sub', 'Na čo šetríš?'));
+      const row = el('div', 'ob-two');
+      const n = el('input'); n.placeholder = 'napr. Dovolenka'; n.maxLength = 40; n.value = ob.goalName; n.setAttribute('aria-label', 'Názov cieľa');
+      n.oninput = () => { ob.goalName = n.value; };
+      const t = el('input'); t.inputMode = 'decimal'; t.placeholder = 'Koľko €'; t.value = ob.goalTarget; t.setAttribute('aria-label', 'Cieľová suma');
+      t.oninput = () => { ob.goalTarget = t.value; };
+      row.append(n, t); body.append(row);
+    }
+  }
+  if (step === 'summary') {
+    const pv = previewPlan();
+    lead('Hotovo,');
+    title('tvoj plán je pripravený');
+    const box = el('div', 'ob-summary');
+    const line = (k, v, cls) => { const r = el('div', 'ob-sum-row'); r.append(el('span', null, k), el('strong', cls || null, v)); box.append(r); };
+    line('Príjem', money(pv.income));
+    line('Pravidelné výdavky', '− ' + money(pv.fixed));
+    if (pv.savings) line('Odkladáš', '− ' + money(pv.savings));
+    line('Voľné na mesiac', money(pv.free), pv.free < 0 ? 'neg' : 'acc');
+    if (pv.free > 0) line('To je približne denne', money(r2(pv.free / 30)), 'acc');
+    body.append(box);
+    if (pv.eta) note(pv.eta);
+    if (pv.free < 0) note('Výdavky sú vyššie ako príjem. V appke uvidíš, kde sa dá ušetriť.');
+    note('Všetko si môžeš kedykoľvek upraviť priamo v appke.');
+  }
+  if (ob.error) body.append(el('p', 'error', ob.error));
+}
+
+// výpočet plánu z odpovedí (pred uložením)
+function previewPlan() {
+  const base = planFor(currentKey);
+  const has = (list, name) => list.some((x) => x.name.toLowerCase() === name.toLowerCase());
+  // položky s rovnakým názvom, ktoré už v appke sú, sa znova nepridajú (rovnako ako pri uložení)
+  const income = r2(sum(base.incomes) + (has(base.incomes, ob.incomeType) ? 0 : obIncomeTotal()));
+  let fixed = sum(base.fixed);
+  for (const [name, v] of Object.entries(ob.fixed)) { const p = parseAmount(v); if (!p.error && !has(base.fixed, name)) fixed = r2(fixed + p.value); }
+  const savings = obSavingsValue();
+  const free = r2(income - fixed - savings);
+  let eta = '';
+  const tg = parseAmount(ob.goalTarget);
+  if (ob.goals.includes('save') && !tg.error && savings > 0) {
+    const n = Math.ceil(tg.value / savings);
+    eta = 'Na „' + (ob.goalName.trim() || 'cieľ') + '“ (' + money(tg.value) + ') budeš mať pri ' + money(savings) + ' mesačne približne za ' + n + ' ' + monthWord(n) + ' – v mesiaci ' + monthLabel(shiftMonth(currentKey, n - 1)).toLowerCase() + '.';
+  }
+  return { income, fixed, savings, free, eta };
+}
+const monthWord = (n) => (n === 1 ? 'mesiac' : (n >= 2 && n <= 4 ? 'mesiace' : 'mesiacov'));
+
+// kontrola súm pred posunom ďalej
+function obValidate(step) {
+  if (step === 'income' && ob.incomeAmount.trim()) { const p = parseAmount(ob.incomeAmount); if (p.error) return 'Príjem: ' + p.error; }
+  if (step === 'fixed') for (const [k, v] of Object.entries(ob.fixed)) { if (v.trim()) { const p = parseAmount(v); if (p.error) return k + ': ' + p.error; } }
+  if (step === 'savings') {
+    if (ob.savingsMode === 'custom') { const p = parseAmount(ob.savingsCustom, true); if (p.error) return 'Sporenie: ' + p.error; }
+    if (ob.goals.includes('save') && ob.goalTarget.trim()) { const p = parseAmount(ob.goalTarget); if (p.error) return 'Cieľ: ' + p.error; }
+  }
+  return '';
+}
+
+// uloženie odpovedí do appky
+function finishOnboarding() {
+  const pv = previewPlan();
+  change(() => {
+    const plan = editablePlan(currentKey);
+    const has = (list, name) => list.some((x) => x.name.toLowerCase() === name.toLowerCase());
+    const inc = obIncomeTotal();
+    if (inc > 0 && !has(plan.incomes, ob.incomeType)) plan.incomes.push({ id: newId(), name: ob.incomeType, amount: inc });
+    for (const [name, v] of Object.entries(ob.fixed)) {
+      const p = parseAmount(v);
+      if (!p.error && !has(plan.fixed, name)) plan.fixed.push({ id: newId(), name, amount: p.value });
+    }
+    plan.savings = pv.savings;
+    const tg = parseAmount(ob.goalTarget);
+    data.profile = {
+      onboarded: true,
+      goals: [...ob.goals],
+      goal: ob.goals.includes('save') && !tg.error ? { name: ob.goalName.trim().slice(0, 40) || 'Môj cieľ', target: tg.value } : null
+    };
+  }, 'Appka je nastavená podľa teba. 🎉');
+  closeOnboarding();
+  goToMonth(currentKey);
+}
+
+$('obNext').onclick = () => {
+  const steps = obSteps(), step = steps[ob.i];
+  ob.error = obValidate(step);
+  if (ob.error) { renderOnboarding(); return; }
+  if (step === 'summary') { finishOnboarding(); return; }
+  ob.i = Math.min(ob.i + 1, obSteps().length - 1);
+  renderOnboarding();
+  $('onboarding').scrollTop = 0;
+};
+// pri písaní zmizne stará chybová hláška
+$('obBody').addEventListener('input', () => { ob.error = ''; const e = $('obBody').querySelector('.error'); if (e) e.remove(); });
+$('obBack').onclick = () => { ob.error = ''; ob.i = Math.max(0, ob.i - 1); renderOnboarding(); };
+$('obSkip').onclick = () => {
+  // preskočenie si zapamätáme, aby sa sprievodca neotváral stále dookola
+  change(() => { data.profile = Object.assign({ goals: [], goal: null }, data.profile, { onboarded: true }); });
+  closeOnboarding();
+};
+$('openOnboarding').onclick = openOnboarding;
+
+// Karta "Tvoj plán" – ciele a tipy podľa odpovedí
+function renderGoalCard(c) {
+  const card = $('goalCard'), p = data.profile;
+  const body = $('goalBody'), tipsEl = $('tipList');
+  body.replaceChildren(); tipsEl.replaceChildren();
+  if (!p || !p.goals || p.goals.length === 0) {
+    body.append(el('p', 'muted', 'Odpovedz na pár otázok a appka ti ukáže plán a tipy presne pre teba.'));
+    $('openOnboarding').textContent = '✨ Nastaviť moje ciele';
+    $('tipNote').hidden = true;
+    return;
+  }
+  $('openOnboarding').textContent = 'Upraviť moje ciele';
+  $('tipNote').hidden = false;
+  const chips = el('div', 'goal-chips');
+  for (const id of p.goals) { const g = GOALS.find((x) => x.id === id); if (g) chips.append(el('span', 'goal-chip', g.icon + ' ' + g.label)); }
+  body.append(chips);
+  if (p.goal) {
+    const s = c.savings;
+    const txt = s > 0
+      ? 'Cieľ „' + p.goal.name + '“ · ' + money(p.goal.target) + ' – pri ' + money(s) + ' mesačne ho dosiahneš približne za ' + Math.ceil(p.goal.target / s) + ' ' + monthWord(Math.ceil(p.goal.target / s)) + '.'
+      : 'Cieľ „' + p.goal.name + '“ · ' + money(p.goal.target) + ' – nastav si sumu v „Chcem ušetriť“ a appka ti vypočíta, kedy ho dosiahneš.';
+    body.append(el('p', 'goal-eta', txt));
+  }
+  for (const t of buildTips(c, p).slice(0, 5)) tipsEl.append(el('li', null, t));
+}
+
+// všeobecné tipy podľa cieľov (nie investičné poradenstvo)
+function buildTips(c, p) {
+  const t = [], g = (id) => p.goals.includes(id);
+  if (g('minus')) {
+    t.push('Drž sa čísla „Dnes môžeš minúť“ hore. Keď ho dnes prekročíš, zajtra si urob lacnejší deň.');
+    if (c.free <= 0 && c.income > 0) t.push('Fixné výdavky ti zjedia celý príjem. Prejdi si predplatné a paušály, či všetky naozaj potrebuješ.');
+  }
+  if (g('overview')) {
+    t.push('Zapíš nákup hneď pri pokladni, zaberie to 5 sekúnd. Spätne si ho už nespomenieš.');
+    t.push('Raz za týždeň pozri graf „Minuté podľa kategórií“. Tam sa schovávajú najväčšie úniky.');
+  }
+  if (g('save')) t.push('Odkladaj hneď po výplate, nie to, čo ostane na konci mesiaca. Na konci väčšinou neostane nič.');
+  if (g('save') && c.savings <= 0) t.push('Nastav si sumu v „Chcem ušetriť“. Appka ju odpočíta hneď na začiatku mesiaca, takže ju neminieš.');
+  if (g('reserve')) {
+    if (c.fixed > 0) t.push('Bežne sa odporúča rezerva na 3 až 6 mesiacov výdavkov. Pri tvojich fixných výdavkoch je to ' + money(r2(c.fixed * 3)) + ' až ' + money(r2(c.fixed * 6)) + '.');
+    t.push('Rezervu drž oddelene od bežného účtu, aby si ju neminul omylom.');
+  }
+  if (g('invest')) {
+    t.push('Pred investovaním si najprv vytvor rezervu a splať drahé dlhy (napr. kreditku).');
+    t.push('Investuj len peniaze, ktoré nebudeš potrebovať aspoň niekoľko rokov. Investícia môže aj klesnúť.');
+    t.push('Over si, že firma, cez ktorú investuješ, je pod dohľadom Národnej banky Slovenska.');
+  }
+  if (g('wealth')) {
+    t.push('Keď ti stúpne príjem, zvýš aj sumu, ktorú odkladáš, nielen míňanie.');
+    t.push('Pomôcka 50/30/20: polovica na potreby, 30 % na zábavu a priania, 20 % na budúcnosť.');
+  }
+  return t;
+}
+
+
+/* =========================================================
+   11. ŠTART APLIKÁCIE
    ========================================================= */
 setDefaultDate();
 render();
 requestPersistentStorage();
+// nový používateľ (žiadne dáta) → najprv sprievodca
+if (!data.profile && Object.keys(data.months).length === 0) openOnboarding();
 </script>
 
 <!-- Knižnica Chart.js 4.4.1 na grafy – je priamo v priečinku vendor/, nič sa nesťahuje z cudzích serverov.
