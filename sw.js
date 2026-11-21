@@ -8,7 +8,7 @@
    ========================================================= */
 
 // Pri zmene súborov stačí zvýšiť číslo verzie
-const CACHE = 'vo-vrecku-v3';
+const CACHE = 'vo-vrecku-v4';
 
 const FILES = [
   './', './manifest.webmanifest', './vendor/chart.umd.min.js',

@@ -175,6 +175,9 @@
   select option { background: var(--card-solid); color: var(--text); }
   input:focus, select:focus { outline: none; border-color: var(--acc); box-shadow: 0 0 0 3px rgba(77, 141, 255, .25), 0 0 18px rgba(77, 141, 255, .35); }
   input.invalid { border-color: var(--red); background: var(--red-bg); }
+  /* iPhone (Safari): pole dátumu má inak vlastnú šírku a vytŕča z mriežky */
+  input[type="date"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; min-height: 50px; text-align: left; }
+  input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
 
   .form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
   .form-grid > div { min-width: 0; }
@@ -826,12 +829,15 @@ function renderItemList(listName, plan) {
     if (editing && editing.list === listName && editing.id === item.id) {
       // --- Režim úpravy: políčka + Uložiť / Zrušiť ---
       li.className = 'editing';
+      // Rozpísaný text sa pamätá v "editing", aby ho prekreslenie stránky nezmazalo
       const nameInput = el('input');
-      nameInput.value = item.name;
+      nameInput.value = editing.name != null ? editing.name : item.name;
       nameInput.maxLength = 60;
       nameInput.setAttribute('aria-label', 'Názov');
       const amountInput = el('input');
-      amountInput.value = toInputText(item.amount);
+      amountInput.value = editing.amount != null ? editing.amount : toInputText(item.amount);
+      nameInput.addEventListener('input', () => { editing.name = nameInput.value; });
+      amountInput.addEventListener('input', () => { editing.amount = amountInput.value; });
       amountInput.inputMode = 'decimal';
       amountInput.setAttribute('aria-label', 'Suma');
       const saveBtn = el('button', 'btn small', 'Uložiť');
@@ -1068,6 +1074,7 @@ function setupItemForm(listName) {
 
     err.textContent = '';
     form.reset();
+    clearDraft(listName + 'Form');
     change(() => editablePlan(viewKey)[listName].push({ id: newId(), name, amount: parsed.value }),
       '„' + name + '“ pridané.');
     nameInput.focus();
@@ -1075,6 +1082,40 @@ function setupItemForm(listName) {
 }
 setupItemForm('incomes');
 setupItemForm('fixed');
+
+/*
+  ROZPÍSANÝ TEXT (koncept): čo napíšeš do formulára a ešte neuložíš, sa priebežne
+  pamätá. Keď iPhone stránku na pozadí zatvorí a znovu načíta (napr. keď odbehneš
+  do inej appky), text sa obnoví. Po pridaní položky sa koncept zmaže.
+  Ostáva len v tomto zariadení, nikam sa neposiela.
+*/
+const DRAFT_KEY = 'voVrecku.draft';
+const DRAFT_FIELDS = {
+  incomesForm: () => [$('incomesForm').elements.name, $('incomesForm').elements.amount],
+  fixedForm: () => [$('fixedForm').elements.name, $('fixedForm').elements.amount],
+  expenseForm: () => [$('expAmount'), $('expNote'), $('expCategory')]
+};
+function readDrafts() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY)) || {}; } catch (e) { return {}; }
+}
+function writeDrafts(d) {
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch (e) { /* nevadí */ }
+}
+function saveDraft(formId) {
+  const d = readDrafts();
+  const values = DRAFT_FIELDS[formId]().map((f) => f.value);
+  if (values.some((v, i) => v && !(formId === 'expenseForm' && i === 2))) d[formId] = values; else delete d[formId];
+  writeDrafts(d);
+}
+function clearDraft(formId) { const d = readDrafts(); delete d[formId]; writeDrafts(d); }
+for (const formId of Object.keys(DRAFT_FIELDS)) {
+  const saved = readDrafts()[formId];
+  DRAFT_FIELDS[formId]().forEach((f, i) => {
+    if (saved && saved[i] != null && saved[i] !== '') f.value = saved[i];
+    f.addEventListener('input', () => saveDraft(formId));
+    f.addEventListener('change', () => saveDraft(formId));
+  });
+}
 
 // --- Chcem ušetriť (uloží sa po opustení políčka alebo Enter) ---
 $('savingsInput').addEventListener('change', (e) => {
@@ -1114,6 +1155,7 @@ $('expenseForm').addEventListener('submit', (e) => {
   };
   amountInput.value = '';
   $('expNote').value = '';
+  clearDraft('expenseForm');
 
   // Výdavok sa uloží do mesiaca podľa svojho dátumu
   const targetKey = date.slice(0, 7);
