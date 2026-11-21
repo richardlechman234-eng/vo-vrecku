@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vo vrecku – osobný finančný poradca</title>
-
-<!-- Knižnica Chart.js na kreslenie grafov (načíta sa z internetu) -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<meta name="description" content="Jednoduchý osobný rozpočet: príjem, fixné výdavky, nákupy a koľko môžeš minúť denne.">
+<meta name="theme-color" content="#3b5bdb">
+<!-- Ikonka v karte prehliadača (vložená priamo, netreba ďalší súbor) -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233b5bdb'/%3E%3Ctext x='16' y='23' font-size='20' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3E€%3C/text%3E%3C/svg%3E">
 
 <style>
   /* =========================================================
@@ -39,6 +40,9 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /* Čísla majú rovnakú šírku, aby sumy pekne lícovali pod sebou */
+  .value, .item-amount, .free-big, .total-row { font-variant-numeric: tabular-nums; }
+
   /* Obal, ktorý drží obsah v strede a nedovolí mu byť príliš široký */
   .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
 
@@ -62,9 +66,7 @@
   .brand p { margin: 0; font-size: .8rem; color: var(--muted); }
 
   .month-nav { display: flex; align-items: center; gap: 6px; }
-  .month-label {
-    min-width: 150px; text-align: center; font-weight: 700; font-size: 1.05rem;
-  }
+  .month-label { min-width: 150px; text-align: center; font-weight: 700; font-size: 1.05rem; }
   .icon-btn {
     width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line);
     background: var(--card); font-size: 1.15rem; cursor: pointer; color: var(--text);
@@ -84,7 +86,8 @@
   .card h2 { margin: 0 0 12px; font-size: 1.05rem; }
   .card h2 .hint { font-weight: 400; color: var(--muted); font-size: .85rem; }
 
-  /* Mriežka kariet: na mobile pod sebou, na notebooku vedľa seba */
+  /* Mriežka kariet: na mobile pod sebou, na notebooku vedľa seba.
+     minmax(0, 1fr) = stĺpec sa smie zúžiť, takže nič nevytŕča z obrazovky */
   .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 16px; }
   @media (min-width: 860px) {
     .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -121,7 +124,8 @@
   /* ---------- Formuláre ---------- */
   label { font-size: .82rem; color: var(--muted); display: block; margin-bottom: 4px; }
   input, select {
-    width: 100%; min-width: 0; font: inherit; font-size: 16px; /* 16px = mobil nebude zväčšovať stránku */
+    width: 100%; min-width: 0; font: inherit;
+    font-size: 16px; /* 16px = mobil pri písaní nezväčšuje stránku */
     padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
     background: #fff; color: var(--text);
   }
@@ -144,9 +148,10 @@
   .btn.ghost:hover { background: #e9edf5; }
   .btn.small { padding: 6px 10px; font-size: .85rem; }
   .btn.block { width: 100%; }
+  [hidden] { display: none !important; }
 
-  .error { color: var(--red); font-size: .85rem; font-weight: 600; min-height: 1.2em; margin-top: 6px; }
-  .error:empty { min-height: 0; margin: 0; }
+  .error { color: var(--red); font-size: .85rem; font-weight: 600; margin-top: 6px; }
+  .error:empty { display: none; }
 
   /* ---------- Zoznamy (príjmy, fixné výdavky, nákupy) ---------- */
   .list { list-style: none; margin: 0; padding: 0; }
@@ -158,10 +163,9 @@
   .list .empty { color: var(--muted); justify-content: center; font-size: .9rem; }
   .item-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
   .item-amount { font-weight: 700; white-space: nowrap; }
-  .item-actions { display: flex; gap: 4px; }
   .mini-btn {
     border: none; background: transparent; cursor: pointer; border-radius: 8px;
-    padding: 6px 8px; font-size: .85rem; color: var(--muted);
+    padding: 8px; font-size: .85rem; color: var(--muted); white-space: nowrap;
   }
   .mini-btn:hover { background: var(--bg); color: var(--text); }
   .mini-btn.del:hover { background: var(--red-bg); color: var(--red); }
@@ -180,9 +184,7 @@
   /* Nákupy */
   .exp-main { flex: 1; min-width: 0; }
   .exp-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .chip {
-    font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: #fff;
-  }
+  .chip { font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: #fff; }
   .exp-date { font-size: .8rem; color: var(--muted); }
   .exp-note { font-size: .88rem; color: var(--muted); overflow-wrap: anywhere; }
 
@@ -191,6 +193,7 @@
     display: flex; justify-content: space-between; align-items: center; gap: 10px;
     padding: 8px 0; border-bottom: 1px dashed var(--line);
   }
+  .calc-row label { margin: 0; font-size: 1rem; color: var(--text); }
   .calc-row input { max-width: 140px; text-align: right; }
   .free-big { font-size: clamp(1.6rem, 6vw, 2.2rem); font-weight: 800; }
 
@@ -209,17 +212,23 @@
   .backup-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
   .muted { color: var(--muted); font-size: .88rem; }
 
-  /* Krátka správa dole na obrazovke (napr. "Uložené") */
+  /* Krátka správa dole na obrazovke (napr. "Výdavok pridaný" + "Vrátiť späť") */
   .toast {
     position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(20px);
-    background: #1d2433; color: #fff; padding: 12px 18px; border-radius: 12px;
+    background: #1d2433; color: #fff; padding: 10px 12px 10px 18px; border-radius: 12px;
     box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: .25s;
-    max-width: calc(100% - 32px); text-align: center; z-index: 50;
+    width: max-content; max-width: calc(100% - 32px); z-index: 50;
+    display: flex; align-items: center; gap: 12px;
   }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
   .toast.bad { background: var(--red); }
+  .toast-btn {
+    font: inherit; font-weight: 700; color: #bac8ff; background: transparent;
+    border: none; cursor: pointer; padding: 6px 8px; border-radius: 8px; white-space: nowrap;
+  }
+  .toast-btn:hover { background: rgba(255, 255, 255, .1); }
 
-  /* Na úzkych mobiloch trochu zmenšíme hornú lištu */
+  /* Na úzkych mobiloch trochu upravíme hornú lištu */
   @media (max-width: 420px) {
     .month-nav { width: 100%; justify-content: space-between; }
     .month-label { min-width: 0; flex: 1; }
@@ -243,7 +252,7 @@
     </div>
     <nav class="month-nav" aria-label="Výber mesiaca">
       <button class="icon-btn" id="prevMonth" aria-label="Predchádzajúci mesiac">←</button>
-      <div class="month-label" id="monthLabel"></div>
+      <div class="month-label" id="monthLabel" aria-live="polite"></div>
       <button class="icon-btn" id="nextMonth" aria-label="Nasledujúci mesiac">→</button>
       <button class="btn small ghost" id="todayBtn">Tento mesiac</button>
     </nav>
@@ -278,30 +287,30 @@
 
   <div class="grid">
 
-    <!-- ===== 4. NOVÝ VÝDAVOK (nákup) ===== -->
+    <!-- ===== NOVÝ VÝDAVOK (nákup) ===== -->
     <section class="card">
       <h2>Zapísať výdavok</h2>
       <form id="expenseForm" novalidate>
         <div class="form-grid">
           <div>
             <label for="expAmount">Suma (€)</label>
-            <input id="expAmount" name="amount" type="text" inputmode="decimal" placeholder="napr. 12,50" autocomplete="off">
+            <input id="expAmount" type="text" inputmode="decimal" placeholder="napr. 12,50" autocomplete="off">
           </div>
           <div>
             <label for="expCategory">Kategória</label>
-            <select id="expCategory" name="category"></select>
+            <select id="expCategory"></select>
           </div>
           <div>
             <label for="expDate">Dátum</label>
-            <input id="expDate" name="date" type="date">
+            <input id="expDate" type="date">
           </div>
           <div>
             <label for="expNote">Poznámka</label>
-            <input id="expNote" name="note" type="text" maxlength="100" placeholder="napr. Lidl" autocomplete="off">
+            <input id="expNote" type="text" maxlength="100" placeholder="napr. Lidl" autocomplete="off">
           </div>
           <div class="full">
             <button class="btn block" type="submit">+ Pridať výdavok</button>
-            <div class="error" id="expError"></div>
+            <div class="error" id="expError" role="alert"></div>
           </div>
         </div>
       </form>
@@ -314,63 +323,63 @@
       <div class="total-row"><span>Spolu minuté</span><span id="expTotal"></span></div>
     </section>
 
-    <!-- ===== 6. GRAFY ===== -->
+    <!-- ===== GRAFY ===== -->
     <section class="card span2">
       <h2>Grafy</h2>
       <div class="charts">
         <div>
           <div class="chart-title">Minuté vs. zostáva</div>
-          <div class="chart-box" id="budgetBox">
-            <canvas id="budgetChart"></canvas>
-            <div class="chart-empty" id="budgetEmpty"></div>
+          <div class="chart-box is-empty" id="budgetBox">
+            <canvas id="budgetChart" role="img" aria-label="Graf minuté verzus zostáva"></canvas>
+            <div class="chart-empty" id="budgetEmpty">Načítavam graf…</div>
           </div>
         </div>
         <div>
           <div class="chart-title">Minuté podľa kategórií</div>
-          <div class="chart-box" id="catBox">
-            <canvas id="catChart"></canvas>
-            <div class="chart-empty" id="catEmpty"></div>
+          <div class="chart-box is-empty" id="catBox">
+            <canvas id="catChart" role="img" aria-label="Graf minuté podľa kategórií"></canvas>
+            <div class="chart-empty" id="catEmpty">Načítavam graf…</div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ===== 1. PRÍJMY ===== -->
+    <!-- ===== PRÍJMY ===== -->
     <section class="card">
       <h2>Mesačný príjem <span class="hint">(výplata, brigáda, štipendium…)</span></h2>
       <ul class="list" id="incomesList"></ul>
       <form class="inline-form" id="incomesForm" novalidate>
-        <input name="name" type="text" maxlength="60" placeholder="Názov, napr. Výplata" autocomplete="off">
-        <input name="amount" type="text" inputmode="decimal" placeholder="Suma €" autocomplete="off">
+        <input name="name" type="text" maxlength="60" placeholder="Názov, napr. Výplata" aria-label="Názov príjmu" autocomplete="off">
+        <input name="amount" type="text" inputmode="decimal" placeholder="Suma €" aria-label="Suma príjmu" autocomplete="off">
         <button class="btn" type="submit">Pridať</button>
       </form>
-      <div class="error" id="incomesError"></div>
+      <div class="error" id="incomesError" role="alert"></div>
       <div class="total-row"><span>Príjem spolu</span><span class="big pos" id="incomesTotal"></span></div>
     </section>
 
-    <!-- ===== 2. FIXNÉ VÝDAVKY ===== -->
+    <!-- ===== FIXNÉ VÝDAVKY ===== -->
     <section class="card">
       <h2>Fixné výdavky <span class="hint">(každý mesiac rovnaké)</span></h2>
       <ul class="list" id="fixedList"></ul>
       <form class="inline-form" id="fixedForm" novalidate>
-        <input name="name" type="text" maxlength="60" placeholder="Názov, napr. Nájom" autocomplete="off">
-        <input name="amount" type="text" inputmode="decimal" placeholder="Suma €" autocomplete="off">
+        <input name="name" type="text" maxlength="60" placeholder="Názov, napr. Nájom" aria-label="Názov fixného výdavku" autocomplete="off">
+        <input name="amount" type="text" inputmode="decimal" placeholder="Suma €" aria-label="Suma fixného výdavku" autocomplete="off">
         <button class="btn" type="submit">Pridať</button>
       </form>
-      <div class="error" id="fixedError"></div>
+      <div class="error" id="fixedError" role="alert"></div>
       <div class="total-row"><span>Fixné výdavky spolu</span><span class="big" id="fixedTotal"></span></div>
     </section>
 
-    <!-- ===== 3. VOĽNÉ PENIAZE NA MESIAC ===== -->
+    <!-- ===== VOĽNÉ PENIAZE NA MESIAC ===== -->
     <section class="card">
       <h2>Voľné peniaze na mesiac</h2>
       <div class="calc-row"><span>Príjem</span><strong class="pos" id="calcIncome"></strong></div>
       <div class="calc-row"><span>− Fixné výdavky</span><strong id="calcFixed"></strong></div>
       <div class="calc-row">
-        <label for="savingsInput" style="margin:0;font-size:1rem;color:var(--text)">− Chcem ušetriť (€)</label>
+        <label for="savingsInput">− Chcem ušetriť (€)</label>
         <input id="savingsInput" type="text" inputmode="decimal" placeholder="0" autocomplete="off">
       </div>
-      <div class="error" id="savingsError"></div>
+      <div class="error" id="savingsError" role="alert"></div>
       <div class="total-row">
         <span>Môžem minúť tento mesiac</span>
         <span class="free-big" id="calcFree"></span>
@@ -380,7 +389,7 @@
     <!-- ===== ZÁLOHA DÁT ===== -->
     <section class="card">
       <h2>Záloha dát</h2>
-      <p class="muted">Dáta sa ukladajú automaticky v tomto prehliadači. Pre istotu si občas stiahni zálohu –
+      <p class="muted">Dáta sa ukladajú automaticky len v tomto prehliadači. Občas si stiahni zálohu –
         hodí sa aj na prenos do iného počítača alebo mobilu.</p>
       <div class="backup-buttons">
         <button class="btn" id="exportBtn">⬇ Exportovať dáta</button>
@@ -414,6 +423,9 @@ const CATEGORIES = [
   { name: 'Ostatné',     color: '#868e96' }
 ];
 
+// Prázdny plán (keď ešte nie je zadaný žiadny príjem ani fixný výdavok)
+const EMPTY_PLAN = Object.freeze({ incomes: [], fixed: [], savings: 0 });
+
 
 /* =========================================================
    2. POMOCNÉ FUNKCIE (malé nástroje, ktoré používame všade)
@@ -438,11 +450,8 @@ const pad = (n) => String(n).padStart(2, '0');
 // Kľúč mesiaca v tvare "2026-11"
 const monthKeyOf = (date) => date.getFullYear() + '-' + pad(date.getMonth() + 1);
 
-// Dnešný dátum v tvare "2026-11-21" (podľa miestneho času)
-function todayISO() {
-  const d = new Date();
-  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-}
+// Dátum v tvare "2026-11-21" (podľa miestneho času, nie svetového)
+const isoDate = (d) => monthKeyOf(d) + '-' + pad(d.getDate());
 
 // Vytvorí jedinečné id pre novú položku
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -479,16 +488,14 @@ function el(tag, className, text) {
 
 /*
   Prečíta sumu z textu, ktorý napísal používateľ.
-  - akceptuje čiarku aj bodku (12,50 aj 12.50)
+  - akceptuje čiarku aj bodku (12,50 aj 12.50) a medzery (1 234,50)
   - odmietne prázdnu, zápornú alebo nezmyselnú hodnotu
   Vracia { value: číslo } alebo { error: 'chybová hláška' }.
   allowZero = true dovolí aj 0 alebo prázdne pole (pre "Chcem ušetriť").
 */
 function parseAmount(raw, allowZero = false) {
   const text = String(raw).replace(/[\s €]/g, '');   // odstráni medzery a znak €
-  if (text === '') {
-    return allowZero ? { value: 0 } : { error: 'Zadaj sumu.' };
-  }
+  if (text === '') return allowZero ? { value: 0 } : { error: 'Zadaj sumu.' };
   if (text.startsWith('-')) return { error: 'Suma nemôže byť záporná.' };
   const normalized = text.replace(',', '.');                // čiarku zmení na bodku
   if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
@@ -500,34 +507,53 @@ function parseAmount(raw, allowZero = false) {
   return { value };
 }
 
-// Číslo zobrazí v políčku na úpravu s čiarkou: 12.5 -> "12,50"
+// Číslo do políčka na úpravu: 12.5 -> "12,50", 100 -> "100"
 const toInputText = (n) => n.toFixed(2).replace('.', ',').replace(',00', '');
 
-// Krátka správa dole na obrazovke
+// Krátka správa dole na obrazovke.
+// undo = záloha dát pred zmenou -> zobrazí sa tlačidlo "Vrátiť späť"
 let toastTimer = null;
-function toast(message, type = '') {
+function toast(message, { bad = false, undo = null } = {}) {
   const t = $('toast');
-  t.textContent = message;
-  t.className = 'toast show ' + type;
+  t.replaceChildren(el('span', null, message));
+  if (undo) {
+    const btn = el('button', 'toast-btn', 'Vrátiť späť');
+    btn.onclick = () => {
+      data = JSON.parse(undo);
+      editing = null;
+      saveData();
+      render();
+      toast('Vrátené späť.');
+    };
+    t.append(btn);
+  }
+  t.className = 'toast show' + (bad ? ' bad' : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = 'toast ' + type; }, 3500);
+  toastTimer = setTimeout(() => t.classList.remove('show'), undo ? 6000 : 3000);
 }
 
 
 /* =========================================================
-   3. UKLADANIE A NAČÍTANIE DÁT
+   3. DÁTA – ukladanie, načítanie a prenos medzi mesiacmi
 
    Tvar dát:
    {
      months: {
        "2026-11": {
-         incomes:  [ { id, name, amount } ],   // príjmy
-         fixed:    [ { id, name, amount } ],   // fixné výdavky
-         savings:  50,                          // chcem ušetriť
+         plan: {                                  // príjem a fixné výdavky
+           incomes: [ { id, name, amount } ],
+           fixed:   [ { id, name, amount } ],
+           savings: 50                            // "Chcem ušetriť"
+         },
          expenses: [ { id, amount, category, date, note, created } ]  // nákupy
        }
      }
    }
+
+   PRENOS DO NOVÉHO MESIACA: mesiac, ktorý nemá vlastný "plan",
+   automaticky používa plán z posledného skoršieho mesiaca.
+   Vlastnú kópiu dostane až vtedy, keď v ňom niečo zmeníš –
+   takže staršie mesiace ostanú tak, ako boli.
    ========================================================= */
 
 // Skontroluje a "vyčistí" dáta (pri načítaní aj pri importe zálohy).
@@ -542,10 +568,7 @@ function cleanData(input) {
   const out = { months: {} };
   for (const [key, m] of Object.entries(input.months)) {
     if (!/^\d{4}-\d{2}$/.test(key) || !m || typeof m !== 'object') continue;
-    out.months[key] = {
-      incomes: cleanItems(m.incomes),
-      fixed: cleanItems(m.fixed),
-      savings: (typeof m.savings === 'number' && m.savings >= 0 && Number.isFinite(m.savings)) ? r2(m.savings) : 0,
+    const month = {
       expenses: (Array.isArray(m.expenses) ? m.expenses : [])
         .filter((x) => x && okAmount(x.amount) && /^\d{4}-\d{2}-\d{2}$/.test(x.date))
         .map((x) => ({
@@ -557,6 +580,16 @@ function cleanData(input) {
           created: Number(x.created) || 0
         }))
     };
+    // Plán: nový tvar (m.plan) aj starší tvar (incomes/fixed priamo v mesiaci)
+    const p = m.plan || (('incomes' in m || 'fixed' in m) ? m : null);
+    if (p && typeof p === 'object') {
+      month.plan = {
+        incomes: cleanItems(p.incomes),
+        fixed: cleanItems(p.fixed),
+        savings: (typeof p.savings === 'number' && Number.isFinite(p.savings) && p.savings >= 0) ? r2(p.savings) : 0
+      };
+    }
+    out.months[key] = month;
   }
   return out;
 }
@@ -564,12 +597,9 @@ function cleanData(input) {
 // Načíta dáta z prehliadača (ak ešte nie sú, začne s prázdnymi)
 function loadData() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = cleanData(JSON.parse(raw));
-      if (parsed) return parsed;
-    }
-  } catch (e) { /* poškodené dáta alebo zablokovaný localStorage */ }
+    const parsed = cleanData(JSON.parse(localStorage.getItem(STORAGE_KEY)));
+    if (parsed) return parsed;
+  } catch (e) { /* poškodené dáta alebo zablokované ukladanie */ }
   return { months: {} };
 }
 
@@ -578,54 +608,75 @@ function saveData() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) {
-    toast('Dáta sa nepodarilo uložiť. Prehliadač možno blokuje ukladanie – stiahni si zálohu.', 'bad');
+    toast('Dáta sa nepodarilo uložiť. Prehliadač možno blokuje ukladanie – stiahni si zálohu.', { bad: true });
   }
 }
 
+// Záznam mesiaca (ak neexistuje, vytvorí prázdny)
+function monthRecord(key) {
+  if (!data.months[key]) data.months[key] = { expenses: [] };
+  return data.months[key];
+}
+
+// Nákupy v mesiaci (len na čítanie)
+const expensesFor = (key) => (data.months[key] ? data.months[key].expenses : []);
+
+// Plán mesiaca na ČÍTANIE: vlastný, inak z posledného skoršieho mesiaca.
+// Ak skorší neexistuje (prezeráš staršiu minulosť), použije najbližší neskorší.
+function planFor(key) {
+  if (data.months[key] && data.months[key].plan) return data.months[key].plan;
+  const withPlan = Object.keys(data.months).filter((k) => data.months[k].plan).sort();
+  const source = withPlan.filter((k) => k < key).pop() || withPlan[0];
+  return source ? data.months[source].plan : EMPTY_PLAN;
+}
+
+// Plán mesiaca na ÚPRAVU: ak mesiac nemá vlastný, vytvorí si kópiu
+function editablePlan(key) {
+  const record = monthRecord(key);
+  if (!record.plan) {
+    const p = planFor(key);
+    record.plan = {
+      incomes: p.incomes.map((x) => ({ ...x })),
+      fixed: p.fixed.map((x) => ({ ...x })),
+      savings: p.savings
+    };
+  }
+  return record.plan;
+}
+
 /*
-  Vráti dáta pre daný mesiac.
-  Ak mesiac ešte neexistuje, PRENESIE príjmy, fixné výdavky a sporenie
-  z najbližšieho skoršieho mesiaca (nákupy sa neprenášajú – nový mesiac začína od nuly).
-  create = true -> mesiac sa aj natrvalo uloží (keď do neho niečo zapisujeme).
+  Každá zmena dát ide cez túto funkciu:
+  urobí zmenu -> uloží -> prekreslí -> ukáže správu.
+  canUndo = true -> v správe bude tlačidlo "Vrátiť späť".
 */
-function getMonth(key, create = false) {
-  if (data.months[key]) return data.months[key];
-  const earlierKey = Object.keys(data.months).filter((k) => k < key).sort().pop();
-  const src = earlierKey ? data.months[earlierKey] : null;
-  const month = {
-    incomes: src ? src.incomes.map((x) => ({ ...x })) : [],
-    fixed: src ? src.fixed.map((x) => ({ ...x })) : [],
-    savings: src ? src.savings : 0,
-    expenses: []
-  };
-  if (create) data.months[key] = month;
-  return month;
+function change(doChange, message, canUndo = false) {
+  const before = JSON.stringify(data);
+  doChange();
+  saveData();
+  render();
+  if (message) toast(message, { undo: canUndo ? before : null });
 }
 
 
 /* =========================================================
    4. STAV APLIKÁCIE
    ========================================================= */
-let data = loadData();                        // všetky dáta
-const currentKey = monthKeyOf(new Date());    // aktuálny mesiac podľa kalendára
-let viewKey = currentKey;                     // mesiac, ktorý práve prezeráme
-let editing = null;                           // ktorá položka sa práve upravuje { list, id }
-
-// Aktuálny mesiac si hneď uložíme (aby sa doň preniesli údaje z minulého mesiaca)
-getMonth(currentKey, true);
-saveData();
+let data = loadData();                  // všetky dáta
+let today = isoDate(new Date());        // dnešný dátum "2026-11-21"
+let currentKey = today.slice(0, 7);     // aktuálny mesiac "2026-11"
+let viewKey = currentKey;               // mesiac, ktorý práve prezeráš
+let editing = null;                     // ktorá položka sa práve upravuje { list, id }
 
 
 /* =========================================================
    5. VÝPOČTY – koľko mám, koľko som minul, koľko môžem minúť
    ========================================================= */
-function calculate(key) {
-  const m = getMonth(key);
-  const income = sum(m.incomes);
-  const fixed = sum(m.fixed);
-  const savings = m.savings || 0;
+function calculate(plan, expenses, key) {
+  const income = sum(plan.incomes);
+  const fixed = sum(plan.fixed);
+  const savings = plan.savings || 0;
   const free = r2(income - fixed - savings);     // voľné peniaze na mesiac
-  const spent = sum(m.expenses);                 // už minuté
+  const spent = sum(expenses);                   // už minuté
   const remaining = r2(free - spent);            // ešte zostáva
 
   const [y, mo] = key.split('-').map(Number);
@@ -634,13 +685,13 @@ function calculate(key) {
   let period, daysLeft, expected = null;
   if (key === currentKey) {
     period = 'current';
-    const today = new Date().getDate();
-    daysLeft = daysInMonth - today + 1;                    // vrátane dneška
-    expected = r2(Math.max(free, 0) * today / daysInMonth); // koľko by som mal mať minuté do dnes
+    const dayOfMonth = Number(today.slice(8));
+    daysLeft = daysInMonth - dayOfMonth + 1;                           // vrátane dneška
+    expected = r2(Math.max(free, 0) * dayOfMonth / daysInMonth);       // koľko by som mal mať minuté do dnes
   } else if (key < currentKey) {
-    period = 'past';   daysLeft = 0;                       // mesiac už skončil
+    period = 'past';   daysLeft = 0;                                   // mesiac už skončil
   } else {
-    period = 'future'; daysLeft = daysInMonth;             // mesiac ešte nezačal
+    period = 'future'; daysLeft = daysInMonth;                         // mesiac ešte nezačal
   }
 
   // Koľko môžem minúť denne (ak som v mínuse, tak 0)
@@ -652,7 +703,7 @@ function calculate(key) {
 // Rozhodne o farbe a texte stavu (zelená / oranžová / červená)
 function getStatus(c) {
   if (c.income === 0 && c.fixed === 0 && c.spent === 0) {
-    return { type: 'info', text: 'Začni tým, že dole zadáš svoj mesačný príjem a fixné výdavky.' };
+    return { type: 'info', text: 'Začni tým, že nižšie zadáš svoj mesačný príjem a fixné výdavky.' };
   }
   if (c.remaining < 0) {
     const why = c.free < 0
@@ -660,7 +711,7 @@ function getStatus(c) {
       : 'Minul si viac, než si mal na tento mesiac k dispozícii.';
     return { type: 'bad', text: '⛔ Si v mínuse o ' + money(-c.remaining) + '. ' + why };
   }
-  if (c.period === 'current' && c.spent > c.expected + 0.004) {
+  if (c.period === 'current' && c.spent > c.expected) {
     return {
       type: 'warn',
       text: '⚠ Pozor, míňaš rýchlejšie, než by si mal. Do dnes by si mal mať minuté najviac ' +
@@ -676,43 +727,45 @@ function getStatus(c) {
 
 /* =========================================================
    6. VYKRESLENIE STRÁNKY
-   Funkcia render() prekreslí všetko podľa aktuálnych dát.
-   Volá sa po každej zmene.
+   render() prekreslí všetko podľa aktuálnych dát. Volá sa po každej zmene.
    ========================================================= */
 function render() {
-  $('monthLabel').textContent = monthLabel(viewKey);
-  $('todayBtn').style.display = viewKey === currentKey ? 'none' : '';  // tlačidlo ukážeme len pri inom mesiaci
+  const plan = planFor(viewKey);
+  const expenses = expensesFor(viewKey);
+  const c = calculate(plan, expenses, viewKey);
 
-  renderSummary();
-  renderItemList('incomes');
-  renderItemList('fixed');
-  renderFreeMoney();
-  renderExpenses();
-  renderCharts();
+  $('monthLabel').textContent = monthLabel(viewKey);
+  $('todayBtn').hidden = viewKey === currentKey;   // tlačidlo len pri inom mesiaci
+
+  renderSummary(c);
+  renderItemList('incomes', plan);
+  renderItemList('fixed', plan);
+  renderFreeMoney(c);
+  renderExpenses(expenses);
+  renderCharts(c, expenses);
 }
 
 // Súhrn hore: veľké čísla + farebný stav
-function renderSummary() {
-  const c = calculate(viewKey);
-  $('sumFree').textContent = money(c.free);
-  $('sumFree').className = 'value ' + (c.free < 0 ? 'neg' : '');
-  $('sumSpent').textContent = money(c.spent);
-
+function renderSummary(c) {
   const status = getStatus(c);
-  const colorClass = { ok: 'pos', warn: 'warn-text', bad: 'neg', info: '' }[status.type];
+  const color = { ok: 'pos', warn: 'warn-text', bad: 'neg', info: '' }[status.type];
+
+  $('sumFree').textContent = money(c.free);
+  $('sumFree').className = 'value' + (c.free < 0 ? ' neg' : '');
+  $('sumSpent').textContent = money(c.spent);
   $('sumRemaining').textContent = money(c.remaining);
-  $('sumRemaining').className = 'value ' + colorClass;
+  $('sumRemaining').className = 'value ' + color;
 
   if (c.daily === null) {
     $('sumDaily').textContent = '—';
-    $('sumDailySub').textContent = 'mesiac už skončil';
     $('sumDaily').className = 'value';
+    $('sumDailySub').textContent = 'mesiac už skončil';
   } else {
     $('sumDaily').textContent = money(c.daily);
+    $('sumDaily').className = 'value ' + color;
     $('sumDailySub').textContent = c.period === 'current'
       ? 'ešte ' + c.daysLeft + ' ' + dayWord(c.daysLeft) + ' (aj s dneškom)'
       : 'na ' + c.daysLeft + ' ' + dayWord(c.daysLeft);
-    $('sumDaily').className = 'value ' + colorClass;
   }
 
   $('status').textContent = status.text;
@@ -720,80 +773,82 @@ function renderSummary() {
 }
 
 // Zoznam príjmov alebo fixných výdavkov (s úpravou a mazaním)
-function renderItemList(listName) {
-  const month = getMonth(viewKey);
+function renderItemList(listName, plan) {
   const ul = $(listName + 'List');
-  ul.innerHTML = '';
+  ul.replaceChildren();
 
-  if (month[listName].length === 0) {
-    ul.appendChild(el('li', 'empty', listName === 'incomes' ? 'Zatiaľ žiadny príjem.' : 'Zatiaľ žiadne fixné výdavky.'));
+  if (plan[listName].length === 0) {
+    ul.append(el('li', 'empty', listName === 'incomes' ? 'Zatiaľ žiadny príjem.' : 'Zatiaľ žiadne fixné výdavky.'));
   }
 
-  month[listName].forEach((item) => {
+  for (const item of plan[listName]) {
     const li = el('li');
 
     if (editing && editing.list === listName && editing.id === item.id) {
       // --- Režim úpravy: políčka + Uložiť / Zrušiť ---
-      li.classList.add('editing');
-      const nameInput = el('input');  nameInput.value = item.name; nameInput.maxLength = 60;
-      const amountInput = el('input'); amountInput.value = toInputText(item.amount);
+      li.className = 'editing';
+      const nameInput = el('input');
+      nameInput.value = item.name;
+      nameInput.maxLength = 60;
+      nameInput.setAttribute('aria-label', 'Názov');
+      const amountInput = el('input');
+      amountInput.value = toInputText(item.amount);
       amountInput.inputMode = 'decimal';
+      amountInput.setAttribute('aria-label', 'Suma');
       const saveBtn = el('button', 'btn small', 'Uložiť');
       const cancelBtn = el('button', 'btn small ghost', 'Zrušiť');
       const err = el('div', 'error');
 
-      const doSave = () => {
+      const cancel = () => { editing = null; render(); };
+      const save = () => {
         const name = nameInput.value.trim();
         const parsed = parseAmount(amountInput.value);
         nameInput.classList.toggle('invalid', !name);
         amountInput.classList.toggle('invalid', !!parsed.error);
         if (!name) { err.textContent = 'Zadaj názov.'; return; }
         if (parsed.error) { err.textContent = parsed.error; return; }
-        const target = getMonth(viewKey, true)[listName].find((x) => x.id === item.id);
-        target.name = name;
-        target.amount = parsed.value;
-        editing = null;
-        saveData();
-        render();
-        toast('Zmena uložená.');
+        change(() => {
+          const target = editablePlan(viewKey)[listName].find((x) => x.id === item.id);
+          target.name = name;
+          target.amount = parsed.value;
+          editing = null;
+        }, 'Zmena uložená.');
       };
-      saveBtn.onclick = doSave;
-      cancelBtn.onclick = () => { editing = null; render(); };
-      [nameInput, amountInput].forEach((inp) => inp.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') doSave();
-        if (e.key === 'Escape') { editing = null; render(); }
-      }));
+      saveBtn.onclick = save;
+      cancelBtn.onclick = cancel;
+      for (const input of [nameInput, amountInput]) {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') save();
+          if (e.key === 'Escape') cancel();
+        });
+      }
 
       li.append(nameInput, amountInput, saveBtn, cancelBtn, err);
-      ul.appendChild(li);
-      setTimeout(() => nameInput.focus(), 0);
+      ul.append(li);
+      nameInput.focus();
     } else {
-      // --- Normálny riadok: názov, suma, tlačidlá ---
-      const actions = el('div', 'item-actions');
+      // --- Normálny riadok: názov, suma, Upraviť, Zmazať ---
       const editBtn = el('button', 'mini-btn', '✎ Upraviť');
+      editBtn.onclick = () => { editing = { list: listName, id: item.id }; render(); };
+
       const delBtn = el('button', 'mini-btn del', '✕');
       delBtn.title = 'Zmazať';
       delBtn.setAttribute('aria-label', 'Zmazať ' + item.name);
-      editBtn.onclick = () => { editing = { list: listName, id: item.id }; render(); };
-      delBtn.onclick = () => {
-        const m = getMonth(viewKey, true);
-        m[listName] = m[listName].filter((x) => x.id !== item.id);
-        saveData();
-        render();
-        toast('Položka „' + item.name + '“ bola zmazaná.');
-      };
-      actions.append(editBtn, delBtn);
-      li.append(el('span', 'item-name', item.name), el('span', 'item-amount', money(item.amount)), actions);
-      ul.appendChild(li);
-    }
-  });
+      delBtn.onclick = () => change(() => {
+        const p = editablePlan(viewKey);
+        p[listName] = p[listName].filter((x) => x.id !== item.id);
+      }, '„' + item.name + '“ zmazané.', true);
 
-  $(listName + 'Total').textContent = money(sum(month[listName]));
+      li.append(el('span', 'item-name', item.name), el('span', 'item-amount', money(item.amount)), editBtn, delBtn);
+      ul.append(li);
+    }
+  }
+
+  $(listName + 'Total').textContent = money(sum(plan[listName]));
 }
 
 // Karta "Voľné peniaze na mesiac"
-function renderFreeMoney() {
-  const c = calculate(viewKey);
+function renderFreeMoney(c) {
   $('calcIncome').textContent = money(c.income);
   $('calcFixed').textContent = '− ' + money(c.fixed);
   $('calcFree').textContent = money(c.free);
@@ -808,55 +863,60 @@ function renderFreeMoney() {
 }
 
 // Zoznam nákupov za mesiac (najnovšie hore)
-function renderExpenses() {
-  const month = getMonth(viewKey);
+function renderExpenses(expenses) {
   const ul = $('expenseList');
-  ul.innerHTML = '';
+  ul.replaceChildren();
 
   // Zoradenie: najnovší dátum hore, pri rovnakom dátume naposledy pridaný hore
-  const sorted = [...month.expenses].sort((a, b) =>
-    b.date.localeCompare(a.date) || b.created - a.created);
+  const sorted = [...expenses].sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created);
 
   if (sorted.length === 0) {
-    ul.appendChild(el('li', 'empty', 'V tomto mesiaci zatiaľ žiadne výdavky.'));
+    ul.append(el('li', 'empty', 'V tomto mesiaci zatiaľ žiadne výdavky.'));
   }
 
-  sorted.forEach((exp) => {
-    const li = el('li');
-    const main = el('div', 'exp-main');
-    const top = el('div', 'exp-top');
-    const cat = CATEGORIES.find((c) => c.name === exp.category) || CATEGORIES[5];
+  for (const exp of sorted) {
+    const cat = CATEGORIES.find((x) => x.name === exp.category);
     const chip = el('span', 'chip', exp.category);
     chip.style.background = cat.color;
+
+    const top = el('div', 'exp-top');
     top.append(chip, el('span', 'exp-date', formatDate(exp.date)));
-    main.appendChild(top);
-    if (exp.note) main.appendChild(el('div', 'exp-note', exp.note));
+    const main = el('div', 'exp-main');
+    main.append(top);
+    if (exp.note) main.append(el('div', 'exp-note', exp.note));
 
     const delBtn = el('button', 'mini-btn del', '✕');
     delBtn.title = 'Zmazať výdavok';
     delBtn.setAttribute('aria-label', 'Zmazať výdavok ' + money(exp.amount));
-    delBtn.onclick = () => {
-      const m = getMonth(viewKey, true);
-      m.expenses = m.expenses.filter((x) => x.id !== exp.id);
-      saveData();
-      render();
-      toast('Výdavok bol zmazaný.');
-    };
+    delBtn.onclick = () => change(() => {
+      const record = monthRecord(viewKey);
+      record.expenses = record.expenses.filter((x) => x.id !== exp.id);
+    }, 'Výdavok ' + money(exp.amount) + ' zmazaný.', true);
 
+    const li = el('li');
     li.append(main, el('span', 'item-amount', money(exp.amount)), delBtn);
-    ul.appendChild(li);
-  });
+    ul.append(li);
+  }
 
   $('expCount').textContent = sorted.length ? '(' + sorted.length + ')' : '';
-  $('expTotal').textContent = money(sum(month.expenses));
+  $('expTotal').textContent = money(sum(expenses));
 }
 
 
 /* =========================================================
    7. GRAFY (Chart.js)
+   Knižnica sa načítava na pozadí, takže stránka sa zobrazí hneď
+   a grafy sa doplnia, keď je knižnica stiahnutá.
    ========================================================= */
+let chartLib = 'loading';      // 'loading' | 'ready' | 'failed'
 let budgetChart = null;
 let catChart = null;
+
+// Volá sa, keď sa Chart.js stiahne (alebo nestiahne)
+function chartLoaded(ok) {
+  chartLib = ok ? 'ready' : 'failed';
+  render();
+}
 
 // Vytvorí graf, alebo ak už existuje, len mu zmení údaje
 function drawDoughnut(existing, canvasId, labels, values, colors) {
@@ -882,45 +942,41 @@ function drawDoughnut(existing, canvasId, labels, values, colors) {
   });
 }
 
-// Zobrazí alebo skryje text "nie je čo zobraziť" namiesto grafu
-function setEmpty(boxId, emptyId, message) {
+// Zobrazí text namiesto grafu (alebo ho skryje, ak message je prázdne)
+function setChartMessage(boxId, emptyId, message) {
   $(boxId).classList.toggle('is-empty', !!message);
-  $(emptyId).textContent = message || '';
+  $(emptyId).textContent = message;
 }
 
-function renderCharts() {
-  // Ak sa Chart.js nenačítal (napr. bez internetu), aplikácia funguje ďalej, len bez grafov
-  if (typeof Chart === 'undefined') {
-    const msg = 'Grafy sa nenačítali – na grafy treba pripojenie na internet.';
-    setEmpty('budgetBox', 'budgetEmpty', msg);
-    setEmpty('catBox', 'catEmpty', msg);
+function renderCharts(c, expenses) {
+  if (chartLib !== 'ready') {
+    const msg = chartLib === 'loading'
+      ? 'Načítavam graf…'
+      : 'Grafy sa nenačítali – na grafy treba pripojenie na internet. Všetko ostatné funguje.';
+    setChartMessage('budgetBox', 'budgetEmpty', msg);
+    setChartMessage('catBox', 'catEmpty', msg);
     return;
   }
-
-  const c = calculate(viewKey);
-  const month = getMonth(viewKey);
 
   // --- Graf 1: Minuté vs. Zostáva ---
   const used = Math.min(c.spent, Math.max(c.free, 0));  // minuté (najviac do výšky voľných peňazí)
   const left = Math.max(c.remaining, 0);                 // čo ešte zostáva
   const over = Math.max(-c.remaining, 0);                // o koľko som v mínuse
-  const labels1 = ['Minuté', 'Zostáva'];
-  const values1 = [used, left];
-  const colors1 = ['#3b5bdb', '#40c057'];
-  if (over > 0) { labels1.push('V mínuse'); values1.push(over); colors1.push('#e03131'); }
-  budgetChart = drawDoughnut(budgetChart, 'budgetChart', labels1, values1, colors1);
-  setEmpty('budgetBox', 'budgetEmpty',
-    (used + left + over) === 0 ? 'Zatiaľ nie je čo zobraziť. Zadaj príjem a výdavky.' : '');
+  const labels = ['Minuté', 'Zostáva'];
+  const values = [used, left];
+  const colors = ['#3b5bdb', '#40c057'];
+  if (over > 0) { labels.push('V mínuse'); values.push(over); colors.push('#e03131'); }
+  budgetChart = drawDoughnut(budgetChart, 'budgetChart', labels, values, colors);
+  setChartMessage('budgetBox', 'budgetEmpty',
+    used + left + over === 0 ? 'Zatiaľ nie je čo zobraziť. Zadaj príjem a výdavky.' : '');
 
-  // --- Graf 2: Minuté podľa kategórií ---
-  const byCategory = CATEGORIES.map((cat) =>
-    sum(month.expenses.filter((e) => e.category === cat.name)));
-  const used2 = CATEGORIES.filter((_, i) => byCategory[i] > 0);
+  // --- Graf 2: Minuté podľa kategórií (len kategórie, v ktorých niečo je) ---
+  const cats = CATEGORIES
+    .map((cat) => ({ ...cat, total: sum(expenses.filter((e) => e.category === cat.name)) }))
+    .filter((cat) => cat.total > 0);
   catChart = drawDoughnut(catChart, 'catChart',
-    used2.map((x) => x.name),
-    byCategory.filter((v) => v > 0),
-    used2.map((x) => x.color));
-  setEmpty('catBox', 'catEmpty', used2.length === 0 ? 'V tomto mesiaci zatiaľ žiadne výdavky.' : '');
+    cats.map((x) => x.name), cats.map((x) => x.total), cats.map((x) => x.color));
+  setChartMessage('catBox', 'catEmpty', cats.length === 0 ? 'V tomto mesiaci zatiaľ žiadne výdavky.' : '');
 }
 
 
@@ -929,15 +985,11 @@ function renderCharts() {
    ========================================================= */
 
 // Naplní výber kategórií
-CATEGORIES.forEach((cat) => {
-  const opt = el('option', null, cat.name);
-  opt.value = cat.name;
-  $('expCategory').appendChild(opt);
-});
+for (const cat of CATEGORIES) $('expCategory').append(new Option(cat.name, cat.name));
 
 // Predvolený dátum výdavku: dnes (alebo 1. deň, ak prezeráš iný mesiac)
 function setDefaultDate() {
-  $('expDate').value = viewKey === currentKey ? todayISO() : viewKey + '-01';
+  $('expDate').value = viewKey === currentKey ? today : viewKey + '-01';
 }
 
 // --- Prepínanie mesiacov ---
@@ -957,41 +1009,39 @@ function setupItemForm(listName) {
   const err = $(listName + 'Error');
   form.addEventListener('submit', (e) => {
     e.preventDefault();                     // stránka sa nemá znova načítať
-    const nameInput = form.elements.name;
-    const amountInput = form.elements.amount;
+    const { name: nameInput, amount: amountInput } = form.elements;
     const name = nameInput.value.trim();
     const parsed = parseAmount(amountInput.value);
 
     nameInput.classList.toggle('invalid', !name);
     amountInput.classList.toggle('invalid', !!parsed.error);
-    if (!name) { err.textContent = 'Zadaj názov (napr. ' + (listName === 'incomes' ? 'Výplata' : 'Nájom') + ').'; nameInput.focus(); return; }
+    if (!name) {
+      err.textContent = 'Zadaj názov (napr. ' + (listName === 'incomes' ? 'Výplata' : 'Nájom') + ').';
+      nameInput.focus();
+      return;
+    }
     if (parsed.error) { err.textContent = parsed.error; amountInput.focus(); return; }
 
     err.textContent = '';
-    getMonth(viewKey, true)[listName].push({ id: newId(), name, amount: parsed.value });
-    saveData();
     form.reset();
+    change(() => editablePlan(viewKey)[listName].push({ id: newId(), name, amount: parsed.value }),
+      '„' + name + '“ pridané.');
     nameInput.focus();
-    render();
   });
 }
 setupItemForm('incomes');
 setupItemForm('fixed');
 
-// --- Chcem ušetriť ---
-$('savingsInput').addEventListener('change', () => {
-  const input = $('savingsInput');
-  const parsed = parseAmount(input.value, true);
-  input.classList.toggle('invalid', !!parsed.error);
+// --- Chcem ušetriť (uloží sa po opustení políčka alebo Enter) ---
+$('savingsInput').addEventListener('change', (e) => {
+  const parsed = parseAmount(e.target.value, true);
+  e.target.classList.toggle('invalid', !!parsed.error);
   $('savingsError').textContent = parsed.error || '';
-  if (parsed.error) return;
-  getMonth(viewKey, true).savings = parsed.value;
-  saveData();
-  input.blur();
-  render();
+  if (parsed.error || parsed.value === planFor(viewKey).savings) return;
+  change(() => { editablePlan(viewKey).savings = parsed.value; }, 'Sporenie uložené.');
 });
 $('savingsInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') e.target.dispatchEvent(new Event('change'));
+  if (e.key === 'Enter') e.target.blur();   // opustenie políčka spustí uloženie
 });
 
 // --- Pridanie bežného výdavku (nákupu) ---
@@ -1002,73 +1052,84 @@ $('expenseForm').addEventListener('submit', (e) => {
   const dateInput = $('expDate');
   const parsed = parseAmount(amountInput.value);
   const date = dateInput.value;
+  const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(date);
 
   amountInput.classList.toggle('invalid', !!parsed.error);
-  dateInput.classList.toggle('invalid', !/^\d{4}-\d{2}-\d{2}$/.test(date));
+  dateInput.classList.toggle('invalid', !dateOk);
   if (parsed.error) { err.textContent = parsed.error; amountInput.focus(); return; }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { err.textContent = 'Vyber dátum.'; dateInput.focus(); return; }
+  if (!dateOk) { err.textContent = 'Vyber dátum.'; dateInput.focus(); return; }
   err.textContent = '';
 
-  // Výdavok uložíme do mesiaca podľa jeho dátumu
-  const targetKey = date.slice(0, 7);
-  getMonth(targetKey, true).expenses.push({
+  const expense = {
     id: newId(),
     amount: parsed.value,
     category: $('expCategory').value,
     date,
     note: $('expNote').value.trim(),
     created: Date.now()
-  });
-  saveData();
-
+  };
   amountInput.value = '';
   $('expNote').value = '';
+
+  // Výdavok sa uloží do mesiaca podľa svojho dátumu
+  const targetKey = date.slice(0, 7);
+  const where = targetKey === viewKey ? '' : ' do mesiaca ' + monthLabel(targetKey);
+  change(() => monthRecord(targetKey).expenses.push(expense),
+    'Výdavok ' + money(expense.amount) + ' pridaný' + where + '.', true);
   amountInput.focus();
-  render();
-  if (targetKey !== viewKey) {
-    toast('Výdavok bol uložený do mesiaca ' + monthLabel(targetKey) + '.');
-  } else {
-    toast('Výdavok ' + money(parsed.value) + ' pridaný.');
-  }
 });
 
 // --- Export: stiahne zálohu ako súbor .json ---
 $('exportBtn').onclick = () => {
   const backup = { app: 'Vo vrecku', exported: new Date().toISOString(), ...data };
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  const link = document.createElement('a');
+  const link = el('a');
   link.href = URL.createObjectURL(blob);
-  link.download = 'vo-vrecku-zaloha-' + todayISO() + '.json';
-  document.body.appendChild(link);
+  link.download = 'vo-vrecku-zaloha-' + today + '.json';
   link.click();
-  link.remove();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   toast('Záloha bola stiahnutá.');
 };
 
 // --- Import: načíta zálohu zo súboru .json ---
 $('importBtn').onclick = () => $('importFile').click();
-$('importFile').addEventListener('change', (e) => {
+$('importFile').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   e.target.value = '';                      // aby šlo ten istý súbor vybrať znova
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    let imported = null;
-    try { imported = cleanData(JSON.parse(reader.result)); } catch (err) { imported = null; }
-    if (!imported) {
-      toast('Tento súbor sa nedá načítať. Vyber zálohu z aplikácie Vo vrecku (.json).', 'bad');
-      return;
-    }
-    if (!confirm('Import nahradí všetky súčasné dáta údajmi zo zálohy. Pokračovať?')) return;
-    data = imported;
-    getMonth(currentKey, true);
-    saveData();
-    goToMonth(currentKey);
-    toast('Dáta zo zálohy boli načítané.');
-  };
-  reader.readAsText(file);
+  let imported = null;
+  try { imported = cleanData(JSON.parse(await file.text())); } catch (err) { /* zlý súbor */ }
+  if (!imported) {
+    toast('Tento súbor sa nedá načítať. Vyber zálohu z aplikácie Vo vrecku (.json).', { bad: true });
+    return;
+  }
+  if (!confirm('Import nahradí všetky súčasné dáta údajmi zo zálohy. Pokračovať?')) return;
+  const before = JSON.stringify(data);
+  data = imported;
+  saveData();
+  goToMonth(currentKey);
+  toast('Dáta zo zálohy boli načítané.', { undo: before });
 });
+
+// --- Ak je aplikácia otvorená v dvoch kartách, zmena v jednej sa prejaví aj v druhej ---
+window.addEventListener('storage', (e) => {
+  if (e.key !== STORAGE_KEY) return;
+  data = loadData();
+  editing = null;
+  render();
+});
+
+// --- Ak necháš stránku otvorenú cez polnoc, dátum a mesiac sa aktualizujú ---
+function refreshToday() {
+  const now = isoDate(new Date());
+  if (now === today) return;
+  const wasOnCurrent = viewKey === currentKey;
+  today = now;
+  currentKey = now.slice(0, 7);
+  goToMonth(wasOnCurrent ? currentKey : viewKey);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshToday(); });
+setInterval(refreshToday, 60 * 1000);
 
 
 /* =========================================================
@@ -1077,5 +1138,15 @@ $('importFile').addEventListener('change', (e) => {
 setDefaultDate();
 render();
 </script>
+
+<!-- Knižnica Chart.js na grafy (z internetu cez CDN).
+     "defer" = stránka sa nezdrží čakaním na ňu.
+     "integrity" = prehliadač overí, že súbor nikto nezmenil. -->
+<script defer
+  src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+  integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4"
+  crossorigin="anonymous"
+  onload="chartLoaded(true)"
+  onerror="chartLoaded(false)"></script>
 </body>
 </html>
