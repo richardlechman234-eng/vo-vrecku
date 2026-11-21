@@ -8,17 +8,33 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; font-src 'self'; object-src 'none'; frame-src 'none'; media-src 'none'; worker-src 'self'; manifest-src 'self'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Vo vrecku – osobný finančný poradca</title>
-<meta name="description" content="Jednoduchý osobný rozpočet: príjem, fixné výdavky, nákupy a koľko môžeš minúť denne.">
+<meta name="description" content="Koľko môžeš dnes minúť? Jednoduchý osobný rozpočet – príjem, výdavky a denný limit. Bez registrácie, dáta len v tvojom mobile.">
+<!-- Náhľad pri zdieľaní odkazu (Messenger, WhatsApp, Instagram, Facebook…) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Vo vrecku">
+<meta property="og:locale" content="sk_SK">
+<meta property="og:title" content="Vo vrecku – koľko môžeš dnes minúť?">
+<meta property="og:description" content="Jednoduchý osobný rozpočet. Bez registrácie, dáta len v tvojom mobile. Beta – hľadáme testerov.">
+<meta property="og:url" content="https://richardlechman234-eng.github.io/vo-vrecku/">
+<meta property="og:image" content="https://richardlechman234-eng.github.io/vo-vrecku/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Logo Vo vrecku – rifľové vrecko so zlatou mincou a appka s číslom Dnes môžeš minúť">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vo vrecku – koľko môžeš dnes minúť?">
+<meta name="twitter:description" content="Jednoduchý osobný rozpočet. Bez registrácie, dáta len v tvojom mobile.">
+<meta name="twitter:image" content="https://richardlechman234-eng.github.io/vo-vrecku/og-image.jpg">
 <meta name="theme-color" content="#0a0c12">
 <!-- Fonty sú uložené priamo v appke (vendor/fonts), nič sa nesťahuje z cudzích serverov -->
 <link rel="stylesheet" href="vendor/fonts/fonts.css">
-<!-- Ikonka v karte prehliadača (vložená priamo, netreba ďalší súbor) -->
+<!-- Ikonka v karte prehliadača (logo: rifľové vrecko s mincou) -->
 <!-- Inštalácia na plochu mobilu / počítača (funguje na webovej adrese, nie pri otvorení dvojklikom) -->
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Vo vrecku">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233b5bdb'/%3E%3Ctext x='16' y='23' font-size='20' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3E€%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 
 <style>
   /* =========================================================
@@ -84,13 +100,7 @@
     gap: 12px; flex-wrap: wrap; padding-top: 12px; padding-bottom: 12px;
   }
   .brand { display: flex; align-items: center; gap: 12px; }
-  .logo {
-    width: 42px; height: 42px; border-radius: 13px;
-    background: radial-gradient(circle at 50% 120%, #4d8dff, #1636b8 55%, #070a1c);
-    color: #dbe7ff; display: grid; place-items: center; font-weight: 900; font-size: 1.25rem;
-    box-shadow: 0 0 22px rgba(77, 141, 255, .55), inset 0 0 0 1px rgba(255, 255, 255, .15);
-    text-shadow: 0 0 10px rgba(159, 192, 255, .9);
-  }
+  .logo { width: 42px; height: 42px; border-radius: 12px; display: block; box-shadow: 0 0 22px rgba(77, 141, 255, .5), inset 0 0 0 1px rgba(255, 255, 255, .15); }
   .brand h1 { margin: 0; font-size: 1.15rem; font-weight: 900; font-stretch: 125%; text-transform: uppercase; letter-spacing: .01em; }
   .brand p { margin: 0; font-family: var(--serif); font-style: italic; font-size: .95rem; color: var(--muted); }
 
@@ -350,7 +360,7 @@
 <header class="topbar">
   <div class="wrap topbar-inner">
     <div class="brand">
-      <div class="logo">€</div>
+      <img class="logo" src="icon-192.png" alt="Logo Vo vrecku" width="42" height="42">
       <div>
         <h1>Vo vrecku</h1>
         <p>Osobný finančný poradca</p>
