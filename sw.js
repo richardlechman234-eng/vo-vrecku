@@ -8,11 +8,12 @@
    ========================================================= */
 
 // Pri zmene súborov stačí zvýšiť číslo verzie
-const CACHE = 'vo-vrecku-v2';
+const CACHE = 'vo-vrecku-v3';
 
 const FILES = [
   './', './manifest.webmanifest', './vendor/chart.umd.min.js',
-  './icon-192.png', './icon-512.png', './apple-touch-icon.png'
+  './icon-192.png', './icon-512.png', './apple-touch-icon.png',
+  './vendor/fonts/fonts.css', './vendor/fonts/Archivo-normal-latin-ext.woff2','./vendor/fonts/Archivo-normal-latin.woff2','./vendor/fonts/InstrumentSerif-italic-latin-ext.woff2','./vendor/fonts/InstrumentSerif-italic-latin.woff2','./vendor/fonts/JetBrainsMono-normal-latin-ext.woff2','./vendor/fonts/JetBrainsMono-normal-latin.woff2'
 ];
 
 // Pri inštalácii si stiahne všetky súbory aplikácie do zásoby
